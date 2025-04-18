@@ -14,23 +14,23 @@ interface ImportMeta {
 }
 
 const statusColors = {
-  waiting: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  slaughtering: 'bg-red-100 text-red-800 border-red-200',
-  skinning: 'bg-orange-100 text-orange-800 border-orange-200',
-  meat_separation: 'bg-purple-100 text-purple-800 border-purple-200',
-  weighing: 'bg-blue-100 text-blue-800 border-blue-200',
-  packaging: 'bg-green-100 text-green-800 border-green-200',
-  done: 'bg-gray-100 text-gray-800 border-gray-200'
+  waiting: 'bg-yellow-50 text-yellow-900 border-yellow-300',
+  slaughtering: 'bg-red-50 text-red-900 border-red-300',
+  skinning: 'bg-orange-50 text-orange-900 border-orange-300',
+  meat_separation: 'bg-purple-50 text-purple-900 border-purple-300',
+  weighing: 'bg-blue-50 text-blue-900 border-blue-300',
+  packaging: 'bg-green-50 text-green-900 border-green-300',
+  done: 'bg-gray-50 text-gray-900 border-gray-300'
 };
 
 const statusLabels = {
-  waiting: 'Waiting',
-  slaughtering: 'Being Slaughtered',
-  skinning: 'Skin Removal',
-  meat_separation: 'Meat Separation',
-  weighing: 'Weighing',
-  packaging: 'Packaging',
-  done: 'Completed'
+  waiting: 'Beklemede',
+  slaughtering: 'Kesimde',
+  skinning: 'Yüzme İşleminde',
+  meat_separation: 'Et Ayrımında',
+  weighing: 'Tartıda',
+  packaging: 'Paketlemede',
+  done: 'Tamamlandı'
 };
 
 interface Animal {
@@ -90,35 +90,35 @@ export default function TVDisplay() {
   }, {} as Record<string, Animal[]>);
 
   return (
-    <div className="space-y-8 bg-white">
+    <div className="space-y-8 bg-gray-50">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900">Kurban Processing Status</h1>
-        <p className="mt-2 text-gray-600">Real-time status updates for all orders</p>
+        <h1 className="text-4xl font-bold text-gray-900">Kurban İşlem Durumu</h1>
+        <p className="mt-2 text-gray-700">Tüm siparişlerin anlık durumu</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {Object.entries(statusLabels).map(([status, label]) => (
           <div key={status} className="space-y-4">
-            <h2 className="text-xl font-semibold text-gray-800 border-b pb-2">{label}</h2>
+            <h2 className="text-xl font-semibold text-gray-900 border-b pb-2">{label}</h2>
             <div className="space-y-3">
               {animalsByStatus?.[status]?.map((animal) => (
                 <div
                   key={animal.id}
-                  className={`p-4 rounded-lg border-2 ${statusColors[animal.status]} transition-all duration-200 hover:scale-105`}
+                  className={`p-4 rounded-lg border-2 ${statusColors[animal.status]} transition-all duration-200 hover:scale-105 shadow-sm`}
                 >
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-lg font-bold">#{animal.order_number}</span>
-                    <span className="text-sm">
-                      {new Date(animal.updated_at).toLocaleTimeString()}
+                    <span className="text-sm font-medium">
+                      {new Date(animal.updated_at).toLocaleTimeString('tr-TR')}
                     </span>
                   </div>
-                  <div className="text-sm">
-                    Started: {new Date(animal.created_at).toLocaleTimeString()}
+                  <div className="text-sm font-medium">
+                    Başlangıç: {new Date(animal.created_at).toLocaleTimeString('tr-TR')}
                   </div>
                 </div>
               ))}
               {(!animalsByStatus?.[status] || animalsByStatus[status].length === 0) && (
-                <div className="text-gray-400 text-center py-4">No orders</div>
+                <div className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg border border-gray-200">Sipariş Yok</div>
               )}
             </div>
           </div>

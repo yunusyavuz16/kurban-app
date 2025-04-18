@@ -3,23 +3,23 @@ import { useQuery } from '@tanstack/react-query';
 import { kurban } from '../services/api';
 
 const statusLabels = {
-  waiting: 'Waiting',
-  slaughtering: 'Being Slaughtered',
-  skinning: 'Skin Removal',
-  meat_separation: 'Meat Separation',
-  weighing: 'Weighing',
-  packaging: 'Packaging',
-  done: 'Completed'
+  waiting: 'Beklemede',
+  slaughtering: 'Kesimde',
+  skinning: 'Yüzme İşleminde',
+  meat_separation: 'Et Ayrımında',
+  weighing: 'Tartıda',
+  packaging: 'Paketlemede',
+  done: 'Tamamlandı'
 };
 
 const statusColors = {
-  waiting: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  slaughtering: 'bg-red-100 text-red-800 border-red-200',
-  skinning: 'bg-orange-100 text-orange-800 border-orange-200',
-  meat_separation: 'bg-purple-100 text-purple-800 border-purple-200',
-  weighing: 'bg-blue-100 text-blue-800 border-blue-200',
-  packaging: 'bg-green-100 text-green-800 border-green-200',
-  done: 'bg-gray-100 text-gray-800 border-gray-200'
+  waiting: 'bg-yellow-50 text-yellow-900 border-yellow-300',
+  slaughtering: 'bg-red-50 text-red-900 border-red-300',
+  skinning: 'bg-orange-50 text-orange-900 border-orange-300',
+  meat_separation: 'bg-purple-50 text-purple-900 border-purple-300',
+  weighing: 'bg-blue-50 text-blue-900 border-blue-300',
+  packaging: 'bg-green-50 text-green-900 border-green-300',
+  done: 'bg-gray-50 text-gray-900 border-gray-300'
 };
 
 interface Animal {
@@ -34,12 +34,12 @@ export default function UserInquiry() {
   const [orderNumber, setOrderNumber] = useState('');
   const [searchId, setSearchId] = useState<string | null>(null);
 
-  const { data: animal, isLoading, error } = useQuery<Animal>({
+  const { data: animal, isLoading, error } = useQuery<Animal | null>({
     queryKey: ['animal', searchId],
     queryFn: async () => {
       if (!searchId) return null;
       const response = await kurban.searchByOrderNumber(parseInt(searchId));
-      return response;
+      return response as Animal;
     },
     enabled: !!searchId
   });
@@ -52,8 +52,8 @@ export default function UserInquiry() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Track Your Order</h1>
-        <p className="text-gray-600">Enter your order number to check its current status</p>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Sipariş Takibi</h1>
+        <p className="text-gray-700">Kurban durumunu kontrol etmek için sipariş numaranızı giriniz</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
@@ -63,36 +63,36 @@ export default function UserInquiry() {
               type="number"
               value={orderNumber}
               onChange={(e) => setOrderNumber(e.target.value)}
-              placeholder="Enter your order number"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200"
+              placeholder="Sipariş numaranızı giriniz"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 transition-all duration-200 text-gray-900 placeholder-gray-500 bg-white"
               required
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors duration-200 font-medium"
+            className="w-full bg-indigo-700 text-white px-6 py-3 rounded-lg hover:bg-indigo-800 transition-colors duration-200 font-medium shadow-sm"
           >
-            Search Order
+            Sipariş Ara
           </button>
         </form>
       </div>
 
       {isLoading && (
         <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-lg">
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
           <div className="flex">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+              <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-red-700">No order found with this number. Please check and try again.</p>
+              <p className="text-sm text-red-900">Bu numaraya ait sipariş bulunamadı. Lütfen kontrol edip tekrar deneyiniz.</p>
             </div>
           </div>
         </div>
@@ -103,19 +103,19 @@ export default function UserInquiry() {
           <div className="p-6">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h2 className="text-2xl font-bold mb-1">Order #{animal.order_number}</h2>
-                <p className="text-sm opacity-75">
-                  Started: {new Date(animal.created_at).toLocaleString()}
+                <h2 className="text-2xl font-bold mb-1">Sipariş #{animal.order_number}</h2>
+                <p className="text-sm opacity-90">
+                  Başlangıç: {new Date(animal.created_at).toLocaleString('tr-TR')}
                 </p>
               </div>
-              <span className="px-4 py-2 rounded-full text-sm font-semibold bg-white bg-opacity-50">
+              <span className="px-4 py-2 rounded-full text-sm font-semibold bg-white bg-opacity-75">
                 {statusLabels[animal.status]}
               </span>
             </div>
 
             <div className="mt-6">
               <div className="relative">
-                <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-white bg-opacity-50">
+                <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-white bg-opacity-75">
                   <div
                     style={{
                       width: `${
@@ -123,12 +123,12 @@ export default function UserInquiry() {
                         (100 / Object.keys(statusLabels).length)
                       }%`
                     }}
-                    className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-500"
+                    className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-700"
                   ></div>
                 </div>
               </div>
-              <p className="text-sm text-right opacity-75">
-                Last Updated: {new Date(animal.updated_at).toLocaleString()}
+              <p className="text-sm text-right opacity-90">
+                Son Güncelleme: {new Date(animal.updated_at).toLocaleString('tr-TR')}
               </p>
             </div>
           </div>

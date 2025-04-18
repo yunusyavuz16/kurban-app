@@ -1,45 +1,77 @@
-const jwt = require('jsonwebtoken');
+const asyncHandler = require('./async');
+const ErrorResponse = require('../utils/errorResponse');
 
-const auth = async (req, res, next) => {
+// Protect routes
+exports.auth = asyncHandler(async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-
-    if (!token) {
-      throw new Error('No token provided');
+    if (!req.headers.authorization?.startsWith('Bearer')) {
+      return next(new ErrorResponse('Not authorized to access this route', 401));
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    const token = req.headers.authorization.split(' ')[1];
+
+    // Verify token with Supabase
+    const { data: { user }, error } = await req.app.locals.supabase.auth.getUser(token);
+
+    if (error || !user) {
+      return next(new ErrorResponse('Not authorized to access this route', 401));
+    }
+
+    // Get user role from database
+    const { data: userData, error: userError } = await req.app.locals.supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (userError) {
+      return next(new ErrorResponse('User role not found', 401));
+    }
+
+    // Add user info to request
+    req.user = {
+      id: user.id,
+      email: user.email,
+      role: userData.role
+    };
+
     next();
-  } catch (error) {
-    res.status(401).json({ error: 'Please authenticate' });
+  } catch (err) {
+    return next(new ErrorResponse('Not authorized to access this route', 401));
   }
+});
+
+// Grant access to specific roles
+exports.authorize = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new ErrorResponse(
+          `User role ${req.user.role} is not authorized to access this route`,
+          403
+        )
+      );
+    }
+    next();
+  };
 };
 
-const staffOnly = async (req, res, next) => {
-  try {
-    if (!req.user || !['staff', 'admin'].includes(req.user.role)) {
-      throw new Error('Not authorized');
+// Admin only middleware
+exports.adminOnly = asyncHandler(async (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return next(
+      new ErrorResponse('Only administrators can access this route', 403)
+    );
   }
   next();
-  } catch (error) {
-    res.status(403).json({ error: 'Access denied. Staff only.' });
-  }
-};
+});
 
-const adminOnly = async (req, res, next) => {
-  try {
-    if (!req.user || req.user.role !== 'admin') {
-      throw new Error('Not authorized');
+// Staff only middleware
+exports.staffOnly = asyncHandler(async (req, res, next) => {
+  if (req.user.role !== 'staff' && req.user.role !== 'admin') {
+    return next(
+      new ErrorResponse('Only staff or administrators can access this route', 403)
+    );
   }
   next();
-  } catch (error) {
-    res.status(403).json({ error: 'Access denied. Admin only.' });
-  }
-};
-
-module.exports = {
-  auth,
-  staffOnly,
-  adminOnly
-};
+});

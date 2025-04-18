@@ -9,10 +9,10 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
 
   const navItems = [
-    { path: '/tv-display', label: 'TV Display' },
-    { path: '/staff', label: 'Staff Panel' },
-    { path: '/status', label: 'Status Inquiry' },
-    { path: '/admin', label: 'Admin Panel' },
+    { path: '/tv-display', label: 'TV Ekranı' },
+    { path: '/staff', label: 'Personel Paneli' },
+    { path: '/status', label: 'Sipariş Sorgula' },
+    { path: '/admin', label: 'Yönetici Paneli' },
   ];
 
   return (
@@ -23,7 +23,7 @@ export default function Layout({ children }: LayoutProps) {
           <div className="flex justify-between h-16">
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-2xl font-bold text-gray-800">Kurban App</h1>
+                <h1 className="text-2xl font-bold text-gray-800">Kurban Takip</h1>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 {navItems.map((item) => (
@@ -54,7 +54,7 @@ export default function Layout({ children }: LayoutProps) {
       <footer className="bg-white shadow-lg mt-auto">
         <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <p className="text-center text-gray-500 text-sm">
-            © {new Date().getFullYear()} Kurban App. All rights reserved.
+            © {new Date().getFullYear()} Kurban Takip. Tüm hakları saklıdır.
           </p>
         </div>
       </footer>

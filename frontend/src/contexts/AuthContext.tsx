@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, User } from '../services/auth';
+import axios from 'axios';
 
 interface AuthContextType {
   user: User | null;
@@ -44,7 +45,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       auth.setToken(token);
       setUser(userData);
     } catch (err) {
-      setError('Login failed. Please check your credentials.');
+      console.error('Login error:', err);
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          setError('Invalid email or password. Please try again.');
+        } else if (err.response?.data?.error) {
+          setError(err.response.data.error);
+        } else {
+          setError('An error occurred during login. Please try again.');
+        }
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
       throw err;
     }
   };

@@ -25,27 +25,27 @@ interface Animal {
 }
 
 const statusOptions = {
-  waiting: 'Bekliyor',
+  waiting: 'Beklemede',
   slaughtering: 'Kesimde',
-  skinning: 'Yüzme',
-  meat_separation: 'Et Ayrımı',
-  weighing: 'Tartı',
-  packaging: 'Paketleme',
+  skinning: 'Yüzme İşleminde',
+  meat_separation: 'Et Ayrımında',
+  weighing: 'Tartıda',
+  packaging: 'Paketlemede',
   done: 'Tamamlandı'
 };
 
 const statusColors = {
-  waiting: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  slaughtering: 'bg-red-100 text-red-800 border-red-200',
-  skinning: 'bg-orange-100 text-orange-800 border-orange-200',
-  meat_separation: 'bg-purple-100 text-purple-800 border-purple-200',
-  weighing: 'bg-blue-100 text-blue-800 border-blue-200',
-  packaging: 'bg-green-100 text-green-800 border-green-200',
-  done: 'bg-gray-100 text-gray-800 border-gray-200'
+  waiting: 'bg-yellow-50 text-yellow-900 border-yellow-300',
+  slaughtering: 'bg-red-50 text-red-900 border-red-300',
+  skinning: 'bg-orange-50 text-orange-900 border-orange-300',
+  meat_separation: 'bg-purple-50 text-purple-900 border-purple-300',
+  weighing: 'bg-blue-50 text-blue-900 border-blue-300',
+  packaging: 'bg-green-50 text-green-900 border-green-300',
+  done: 'bg-gray-50 text-gray-900 border-gray-300'
 };
 
 const getStatusStyle = (status: string) => {
-  if (status === 'all') return 'bg-white text-gray-900';
+  if (status === 'all') return 'bg-white text-gray-900 border border-gray-300';
   return statusColors[status as keyof typeof statusColors];
 };
 
@@ -252,35 +252,29 @@ export default function StaffPanel() {
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Personel Paneli</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Kurban kayıtlarını yönetin ve durumlarını güncelleyin
-          </p>
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-8 bg-white rounded-lg shadow-md p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Personel Paneli</h1>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-indigo-700 text-white px-4 py-2 rounded-lg hover:bg-indigo-800 transition-colors duration-200"
+          >
+            Yeni Sipariş Ekle
+          </button>
         </div>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          Yeni Kayıt Ekle
-        </button>
-      </div>
 
-      <div className="mb-6">
-        <label htmlFor="status-filter" className="block text-sm font-medium text-gray-700 mb-2">
-          Durum Filtresi
-        </label>
-        <div className="relative">
+        <div className="mb-6">
+          <label htmlFor="status-filter" className="block text-sm font-medium text-gray-900 mb-2">
+            Durum Filtresi
+          </label>
           <select
             id="status-filter"
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className={`appearance-none block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium ${getStatusStyle(selectedStatus)}`}
-            style={{ minHeight: '44px' }}
+            className={`block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-600 focus:ring-indigo-600 transition-colors duration-200 font-medium ${getStatusStyle(selectedStatus)}`}
           >
-            <option value="all" className="bg-white text-gray-900 font-medium">Tümü</option>
+            <option value="all" className="text-gray-900 bg-white">Tüm Siparişler</option>
             {Object.entries(statusOptions).map(([value, label]) => (
               <option
                 key={value}
@@ -291,110 +285,96 @@ export default function StaffPanel() {
               </option>
             ))}
           </select>
-          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </div>
         </div>
+
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {animals
+              ?.filter(animal => selectedStatus === 'all' ? true : animal.status === selectedStatus)
+              .map(animal => (
+                <div
+                  key={animal.id}
+                  className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-900">
+                        Sipariş #{animal.order_number}
+                      </h3>
+                      <p className="text-sm text-gray-700">
+                        Oluşturulma: {new Date(animal.created_at).toLocaleString('tr-TR')}
+                      </p>
+                    </div>
+                    <select
+                      value={animal.status}
+                      onChange={(e) => handleStatusUpdate(animal, e.target.value)}
+                      className={`rounded-lg border-gray-300 shadow-sm focus:border-indigo-600 focus:ring-indigo-600 transition-colors duration-200 ${
+                        statusColors[animal.status as keyof typeof statusColors]
+                      } font-medium`}
+                    >
+                      {Object.entries(statusOptions).map(([value, label]) => (
+                        <option
+                          key={value}
+                          value={value}
+                          className={`${statusColors[value as keyof typeof statusColors]} font-medium`}
+                        >
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Status-specific forms */}
+                  {animal.status in StatusForms && (
+                    <div key={animal.status}>
+                      {React.createElement(StatusForms[animal.status], {
+                        animal,
+                        onUpdate: (data) => handleDataUpdate(animal, data)
+                      })}
+                    </div>
+                  )}
+                </div>
+              ))}
+          </div>
+        )}
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredAnimals?.map((animal) => (
-            <div
-              key={animal.id}
-              className="bg-white rounded-lg shadow-md p-6 border border-gray-200"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold">Sıra #{animal.order_number}</h3>
-                  <p className="text-sm text-gray-500">
-                    {new Date(animal.created_at).toLocaleString('tr-TR')}
-                  </p>
-                </div>
-                <div className="relative">
-                  <select
-                    value={animal.status}
-                    onChange={(e) => handleStatusUpdate(animal, e.target.value)}
-                    className={`appearance-none text-sm px-4 py-2 border rounded-lg font-medium ${
-                      statusColors[animal.status as keyof typeof statusColors]
-                    }`}
-                    style={{ minHeight: '38px', minWidth: '140px' }}
-                  >
-                    {Object.entries(statusOptions).map(([value, label]) => (
-                      <option
-                        key={value}
-                        value={value}
-                        className={`${statusColors[value as keyof typeof statusColors]} font-medium`}
-                      >
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status-specific forms */}
-              {animal.status in StatusForms && (
-                <div key={animal.status}>
-                  {React.createElement(StatusForms[animal.status], {
-                    animal,
-                    onUpdate: (data) => handleDataUpdate(animal, data)
-                  })}
-                </div>
-              )}
-
-              <div className="text-sm text-gray-600 mt-4">
-                <p>Son Güncelleme: {new Date(animal.updated_at).toLocaleString('tr-TR')}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Modal */}
+      {/* Add New Order Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Yeni Kurban Kaydı</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label htmlFor="orderNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                  Sıra Numarası
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Yeni Sipariş Ekle</h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="orderNumber" className="block text-sm font-medium text-gray-900">
+                  Sipariş Numarası
                 </label>
                 <input
                   type="number"
                   id="orderNumber"
                   value={newOrderNumber}
                   onChange={(e) => setNewOrderNumber(e.target.value)}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500"
+                  className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-600 focus:ring-indigo-600"
                   required
                 />
               </div>
-              <div className="flex justify-end gap-3">
+              <div className="flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors duration-200"
                 >
                   İptal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                  disabled={createMutation.isPending}
+                  className="px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800 transition-colors duration-200"
                 >
-                  {createMutation.isPending ? 'Ekleniyor...' : 'Ekle'}
+                  Ekle
                 </button>
               </div>
             </form>

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 interface User {
   id: string;
@@ -9,68 +9,66 @@ interface User {
 }
 
 interface LoginResponse {
+  success: boolean;
   token: string;
   user: User;
 }
 
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request interceptor to include auth token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export const auth = {
   login: async (email: string, password: string): Promise<LoginResponse> => {
-    const response = await axios.post(`${API_URL}/auth/login`, {
-      email,
-      password
-    });
-    return response.data;
+    try {
+      const response = await api.post('/auth/login', {
+        email,
+        password
+      });
+
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   },
 
   getCurrentUser: async (): Promise<User> => {
     const token = localStorage.getItem('token');
     if (!token) throw new Error('No token found');
 
-    const response = await axios.get(`${API_URL}/auth/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    return response.data;
+    const response = await api.get('/auth/me');
+    return response.data.data;
   },
 
   getUsers: async (): Promise<User[]> => {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('No token found');
-
-    const response = await axios.get(`${API_URL}/auth/users`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+    const response = await api.get('/auth/users');
     return response.data;
   },
 
   createUser: async (email: string, password: string, role: 'admin' | 'staff'): Promise<User> => {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('No token found');
-
-    const response = await axios.post(
-      `${API_URL}/auth/users`,
-      { email, password, role },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
+    const response = await api.post('/auth/register', { email, password, role });
     return response.data;
   },
 
   deleteUser: async (id: string): Promise<void> => {
-    const token = localStorage.getItem('token');
-    if (!token) throw new Error('No token found');
-
-    await axios.delete(`${API_URL}/auth/users/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+    await api.delete(`/auth/users/${id}`);
   },
 
   logout: () => {

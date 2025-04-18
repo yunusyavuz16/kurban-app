@@ -9,9 +9,9 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
 
   const navItems = [
-    { path: '/tv-display', label: 'TV Ekranı' },
+    { path: '/tv', label: 'TV Ekranı' },
     { path: '/staff', label: 'Personel Paneli' },
-    { path: '/status', label: 'Sipariş Sorgula' },
+    { path: '/inquiry', label: 'Kurban Sorgula' },
     { path: '/admin', label: 'Yönetici Paneli' },
   ];
 

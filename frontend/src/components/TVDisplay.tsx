@@ -90,10 +90,10 @@ export default function TVDisplay() {
   }, {} as Record<string, Animal[]>);
 
   return (
-    <div className="space-y-8 bg-gray-50">
+    <div className="space-y-8 bg-gray-50 p-8">
       <div className="text-center">
         <h1 className="text-4xl font-bold text-gray-900">Kurban İşlem Durumu</h1>
-        <p className="mt-2 text-gray-700">Tüm siparişlerin anlık durumu</p>
+        <p className="mt-2 text-gray-700">Tüm Kurbanlerin anlık durumu</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -118,7 +118,7 @@ export default function TVDisplay() {
                 </div>
               ))}
               {(!animalsByStatus?.[status] || animalsByStatus[status].length === 0) && (
-                <div className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg border border-gray-200">Sipariş Yok</div>
+                <div className="text-gray-500 text-center py-4 bg-gray-50 rounded-lg border border-gray-200">Kurban Yok</div>
               )}
             </div>
           </div>

@@ -50,10 +50,10 @@ export default function UserInquiry() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto p-8">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Sipariş Takibi</h1>
-        <p className="text-gray-700">Kurban durumunu kontrol etmek için sipariş numaranızı giriniz</p>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Kurban Takibi</h1>
+        <p className="text-gray-700">Kurban durumunu kontrol etmek için Kurban numaranızı giriniz</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
@@ -63,7 +63,7 @@ export default function UserInquiry() {
               type="number"
               value={orderNumber}
               onChange={(e) => setOrderNumber(e.target.value)}
-              placeholder="Sipariş numaranızı giriniz"
+              placeholder="Kurban numaranızı giriniz"
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 transition-all duration-200 text-gray-900 placeholder-gray-500 bg-white"
               required
             />
@@ -72,7 +72,7 @@ export default function UserInquiry() {
             type="submit"
             className="w-full bg-indigo-700 text-white px-6 py-3 rounded-lg hover:bg-indigo-800 transition-colors duration-200 font-medium shadow-sm"
           >
-            Sipariş Ara
+            Kurban Ara
           </button>
         </form>
       </div>
@@ -92,7 +92,7 @@ export default function UserInquiry() {
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-red-900">Bu numaraya ait sipariş bulunamadı. Lütfen kontrol edip tekrar deneyiniz.</p>
+              <p className="text-sm text-red-900">Bu numaraya ait Kurban bulunamadı. Lütfen kontrol edip tekrar deneyiniz.</p>
             </div>
           </div>
         </div>
@@ -103,7 +103,7 @@ export default function UserInquiry() {
           <div className="p-6">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h2 className="text-2xl font-bold mb-1">Sipariş #{animal.order_number}</h2>
+                <h2 className="text-2xl font-bold mb-1">Kurban #{animal.order_number}</h2>
                 <p className="text-sm opacity-90">
                   Başlangıç: {new Date(animal.created_at).toLocaleString('tr-TR')}
                 </p>

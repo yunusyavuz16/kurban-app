@@ -198,8 +198,9 @@ export default function AdminPanel() {
     );
   }
 
+  console.log('animals', animals)
   const completedAnimals =
-    animals?.filter((a) => a.status.name === "done").length || 0;
+    animals?.filter((a) => a?.status?.name === "done").length || 0;
   const totalAnimals = animals?.length || 0;
 
   return (
@@ -284,7 +285,7 @@ export default function AdminPanel() {
             <span
               className={`${
                 createUserMutation.isPending ? "opacity-0" : "opacity-100"
-              }`}
+              } !text-white`}
             >
               Kullanıcı Oluştur
             </span>
@@ -345,7 +346,7 @@ export default function AdminPanel() {
         </div>
       </div>
 
-      <div className="!bg-white p-4 sm:p-6 rounded-lg shadow-lg border border-gray-200 mb-6 sm:mb-8">
+      <div className="!bg-white p-4 sm:p-6 rounded-lg shadow-lg border !border-gray-200 mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4">
           <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-2 sm:mb-0">
             Durum Yönetimi
@@ -395,42 +396,23 @@ export default function AdminPanel() {
       </div>
 
       {isStatusModalOpen && (
-        <div className="fixed inset-0 !bg-black !bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="!bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg transform transition-all">
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{background: 'rgba(200,200,200,0.75)'}}>
+          <div className="!bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg transform transition-all ">
             <h3 className="text-lg sm:text-xl font-medium leading-6 text-gray-900 mb-4">
               {statusForm.id ? 'Durumu Düzenle' : 'Yeni Durum Ekle'}
             </h3>
             <form onSubmit={handleStatusSubmit} className="space-y-4">
               <div>
                 <label htmlFor="label" className="block text-sm font-medium text-gray-700">Etiket (Görünür Ad)</label>
-                <input type="text" name="label" id="label" value={statusForm.label} onChange={handleStatusFormChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" />
+                <input type="text" name="label" id="label" value={statusForm.label} onChange={handleStatusFormChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-black" />
               </div>
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">İsim (Teknik Ad - boşluksuz, ör: 'kesimde')</label>
-                <input type="text" name="name" id="name" value={statusForm.name} onChange={handleStatusFormChange} required pattern="^[a-z_]+$" title="Sadece küçük harf ve alt çizgi" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" />
-              </div>
-              <div>
-                <label htmlFor="display_order" className="block text-sm font-medium text-gray-700">Görüntüleme Sırası</label>
-                <input type="number" name="display_order" id="display_order" value={statusForm.display_order} onChange={handleStatusFormChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" />
-              </div>
-              <div>
-                <label htmlFor="color_bg" className="block text-sm font-medium text-gray-700">Arkaplan Rengi (Tailwind Sınıfı)</label>
-                <input type="text" name="color_bg" id="color_bg" value={statusForm.color_bg} onChange={handleStatusFormChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" placeholder="örn: !bg-red-50"/>
-              </div>
-              <div>
-                <label htmlFor="color_text" className="block text-sm font-medium text-gray-700">Yazı Rengi (Tailwind Sınıfı)</label>
-                <input type="text" name="color_text" id="color_text" value={statusForm.color_text} onChange={handleStatusFormChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" placeholder="örn: text-red-900"/>
-              </div>
-              <div>
-                <label htmlFor="color_border" className="block text-sm font-medium text-gray-700">Kenarlık Rengi (Tailwind Sınıfı)</label>
-                <input type="text" name="color_border" id="color_border" value={statusForm.color_border} onChange={handleStatusFormChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2" placeholder="örn: border-red-300"/>
-              </div>
+
 
               {statusError && <p className="text-red-600 text-sm">{statusError}</p>}
 
               <div className="mt-6 flex flex-col sm:flex-row sm:justify-end sm:space-x-3 space-y-3 sm:space-y-0">
-                <button type="button" onClick={() => setIsStatusModalOpen(false)} className="w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 !bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:!bg-gray-50">İptal</button>
                 <button type="submit" disabled={statusMutation.isPending} className={`w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm ${statusMutation.isPending ? '!bg-blue-400' : '!bg-blue-600 hover:!bg-blue-700'}`}> {statusMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}</button>
+                <button type="button" onClick={() => setIsStatusModalOpen(false)} className="  w-full sm:w-auto inline-flex justify-center rounded-md border !border-gray-500 !bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:!bg-gray-50">İptal</button>
               </div>
             </form>
           </div>

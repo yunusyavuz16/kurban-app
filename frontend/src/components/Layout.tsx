@@ -43,39 +43,9 @@ export default function Layout({ children }: LayoutProps) {
               </div>
             </div>
 
-            {/* Desktop Navigation Links */}
-            <div className="hidden sm:flex sm:space-x-8">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`${
-                    location.pathname === item.path
-                      ? "border-indigo-500 text-gray-900"
-                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                  } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
 
-            {/* Mobile Navigation Links (Displayed below logo/title on mobile) */}
-            <div className="flex sm:hidden space-x-4 mt-2 sm:mt-0">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`${
-                    location.pathname === item.path
-                      ? "border-indigo-500 text-gray-900"
-                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                  } inline-flex items-center px-1 pt-1 border-b-2 text-xs font-medium`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
+
+
 
             {/* Logout Button - Center on mobile, align right on larger */}
             <div className="flex items-center mt-2 sm:mt-0 sm:ml-6">

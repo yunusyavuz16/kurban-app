@@ -251,20 +251,20 @@ exports.getMe = async (req, res) => {
   try {
     const { data: userData, error } = await req.app.locals.supabase
       .from('users')
-      .select('*')
+      .select('id, email, role')
       .eq('id', req.user.id)
       .single();
 
     if (error) throw error;
 
     res.status(200).json({
-      success: true,
-      data: userData
+      id: userData.id,
+      email: userData.email,
+      role: userData.role
     });
   } catch (err) {
     console.error('Get user error:', err);
     res.status(500).json({
-      success: false,
       error: 'Server Error'
     });
   }

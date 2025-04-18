@@ -11,8 +11,9 @@ BEGIN
   SELECT order_number INTO dragged_order FROM kurban WHERE id = dragged_id;
   SELECT order_number INTO target_order FROM kurban WHERE id = target_id;
 
-  -- Exit if IDs are the same or not found (or not in 'waiting' state if we add that check)
+  -- Exit if IDs are the same or not found
   IF dragged_id = target_id OR dragged_order IS NULL OR target_order IS NULL THEN
+    RAISE NOTICE 'Dragged or target ID not found or they are the same. dragged_id: %, target_id: %, dragged_order: %, target_order: %', dragged_id, target_id, dragged_order, target_order;
     RETURN;
   END IF;
 
@@ -23,8 +24,7 @@ BEGIN
     SET order_number = order_number - 1
     WHERE
       order_number > dragged_order
-      AND order_number <= target_order
-      AND status_id = (SELECT id FROM kurban_statuses WHERE name = 'waiting'); -- Only reorder waiting ones
+      AND order_number <= target_order;
 
     -- Place the dragged item at the target position
     UPDATE kurban
@@ -37,8 +37,7 @@ BEGIN
     SET order_number = order_number + 1
     WHERE
       order_number >= target_order
-      AND order_number < dragged_order
-      AND status_id = (SELECT id FROM kurban_statuses WHERE name = 'waiting'); -- Only reorder waiting ones
+      AND order_number < dragged_order;
 
     -- Place the dragged item at the target position
     UPDATE kurban

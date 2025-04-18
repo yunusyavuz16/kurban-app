@@ -1,10 +1,14 @@
-import React, { useState, Fragment } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { kurban, status } from '../services/api';
-import type { Animal, KurbanStatus, KurbanUpdatePayload } from '../services/api';
-import { Dialog, Transition } from '@headlessui/react';
-import { useForm } from 'react-hook-form';
-import { Modal } from './Modal';
+import React, { useState, Fragment } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { kurban, status } from "../services/api";
+import type {
+  Animal,
+  KurbanStatus,
+  KurbanUpdatePayload,
+} from "../services/api";
+import { Dialog, Transition } from "@headlessui/react";
+import { useForm } from "react-hook-form";
+import { Modal } from "./Modal";
 
 interface MeatPieces {
   leg: number;
@@ -31,72 +35,92 @@ const StatusForms: Record<string, React.FC<StatusFormProps>> = {
   packaging: () => null,
   completed: () => null,
   cancelled: () => null,
-  waiting: () => null
+  waiting: () => null,
 };
 
 export default function StaffPanel() {
   const [formError, setFormError] = useState<string | null>(null);
-  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('all');
+  const [selectedStatusFilter, setSelectedStatusFilter] =
+    useState<string>("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null);
-  const [updatedAnimalData, setUpdatedAnimalData] = useState<Partial<KurbanUpdatePayload>>({});
+  const [updatedAnimalData, setUpdatedAnimalData] = useState<
+    Partial<KurbanUpdatePayload>
+  >({});
 
   const queryClient = useQueryClient();
 
   const { data: animals, isLoading: isLoadingAnimals } = useQuery<Animal[]>({
-    queryKey: ['animals'],
-    queryFn: kurban.getAll
+    queryKey: ["animals"],
+    queryFn: kurban.getAll,
   });
 
-  const { data: kurbanStatuses, isLoading: isLoadingStatuses } = useQuery<KurbanStatus[]>({
-    queryKey: ['statuses'],
+  const { data: kurbanStatuses, isLoading: isLoadingStatuses } = useQuery<
+    KurbanStatus[]
+  >({
+    queryKey: ["statuses"],
     queryFn: status.getAll,
     staleTime: 60 * 1000 * 5,
   });
 
   const createMutation = useMutation({
-    mutationFn: ({ order_number, notes }: KurbanFormData) => kurban.create({
-      order_number,
-      notes
-    }),
+    mutationFn: ({ order_number, notes }: KurbanFormData) =>
+      kurban.create({
+        order_number,
+        notes,
+      }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['animals'] });
+      queryClient.invalidateQueries({ queryKey: ["animals"] });
       setIsAddModalOpen(false);
       setFormError(null);
     },
     onError: (error: any) => {
-      console.error('Kurban ekleme hatası:', error);
-      setFormError('Kurban eklenirken bir hata oluştu. Lütfen tekrar deneyiniz.');
-    }
+      console.error("Kurban ekleme hatası:", error);
+      setFormError(
+        "Kurban eklenirken bir hata oluştu. Lütfen tekrar deneyiniz."
+      );
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<KurbanUpdatePayload> }) =>
-      kurban.update(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: Partial<KurbanUpdatePayload>;
+    }) => kurban.update(id, data),
     onSuccess: (updatedAnimal) => {
-      queryClient.invalidateQueries({ queryKey: ['animals'] });
+      queryClient.invalidateQueries({ queryKey: ["animals"] });
       setIsDetailModalOpen(false);
       setUpdatedAnimalData({});
     },
     onError: (error: any) => {
       console.error("Update error:", error);
-    }
+    },
   });
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<KurbanFormData>();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<KurbanFormData>();
 
   const onSubmit = async (data: KurbanFormData) => {
     try {
       await createMutation.mutateAsync({
         order_number: data.order_number,
-        notes: data.notes
+        notes: data.notes,
       });
       setIsAddModalOpen(false);
       reset();
     } catch (error: any) {
-      console.error('Error creating kurban:', error);
-      setFormError(error.response?.data?.error || 'Kurban eklenirken bir hata oluştu');
+      console.error("Error creating kurban:", error);
+      setFormError(
+        error.response?.data?.error || "Kurban eklenirken bir hata oluştu"
+      );
     }
   };
 
@@ -107,11 +131,26 @@ export default function StaffPanel() {
   };
 
   const handleStatusUpdate = (animalId: string, newStatusId: string) => {
-    updateMutation.mutate({ id: animalId, data: { status_id: newStatusId } });
+    const selectedAnimal = animals?.find((el) => el.id === animalId);
+    if (selectedAnimal) {
+      console.log("selected animal");
+      const { no, order_number, weight, notes, meat_pieces } = selectedAnimal;
+
+      const updateData: Partial<KurbanUpdatePayload> = {
+        status_id: newStatusId,
+        no,
+        order_number,
+        weight,
+        notes,
+        meat_pieces,
+      };
+      console.log('updateData',updateData)
+      updateMutation.mutate({ id: animalId, data: updateData });
+    }
   };
 
   const handleDetailDataChange = (updates: Partial<KurbanUpdatePayload>) => {
-    setUpdatedAnimalData(prev => ({ ...prev, ...updates }));
+    setUpdatedAnimalData((prev) => ({ ...prev, ...updates }));
   };
 
   const handleDetailSave = () => {
@@ -120,14 +159,18 @@ export default function StaffPanel() {
     }
   };
 
-  const filteredAnimals = animals?.filter(animal =>
-    selectedStatusFilter === 'all' || animal.status.id === selectedStatusFilter
+  const filteredAnimals = animals?.filter(
+    (animal) =>
+      selectedStatusFilter === "all" ||
+      animal.status.id === selectedStatusFilter
   );
 
-  const sortedStatuses = kurbanStatuses?.sort((a, b) => a.display_order - b.display_order);
+  const sortedStatuses = kurbanStatuses?.sort(
+    (a, b) => a.display_order - b.display_order
+  );
 
   const getStatusStyleString = (status?: KurbanStatus): string => {
-    if (!status) return '!bg-gray-100 text-gray-800 border-gray-300';
+    if (!status) return "!bg-gray-100 text-gray-800 border-gray-300";
     return `${status.color_bg} ${status.color_text} ${status.color_border}`;
   };
 
@@ -156,11 +199,11 @@ export default function StaffPanel() {
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-wrap gap-2 sm:gap-3">
           <button
-            onClick={() => setSelectedStatusFilter('all')}
+            onClick={() => setSelectedStatusFilter("all")}
             className={`px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm font-medium rounded-lg border transition-colors duration-150 ${
-              selectedStatusFilter === 'all'
-                ? '!bg-blue-600 text-white border-blue-600'
-                : '!bg-white text-gray-700 border-gray-300 hover:!bg-gray-100'
+              selectedStatusFilter === "all"
+                ? "!bg-blue-600 text-white border-blue-600"
+                : "!bg-white text-gray-700 border-gray-300 hover:!bg-gray-100"
             }`}
           >
             Tümü
@@ -169,10 +212,12 @@ export default function StaffPanel() {
             <button
               key={status.id}
               onClick={() => setSelectedStatusFilter(status.id)}
-              className={`px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm font-medium rounded-lg border transition-colors duration-150 ${getStatusStyleString(status)} ${
+              className={`px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm font-medium rounded-lg border transition-colors duration-150 ${getStatusStyleString(
+                status
+              )} ${
                 selectedStatusFilter === status.id
-                  ? 'ring-2 ring-offset-1 ring-black'
-                  : ''
+                  ? "!bg-blue-600 !text-white ring-2 ring-offset-1 ring-black"
+                  : "!bg-white !text-gray-700"
               }`}
             >
               {status.label}
@@ -189,10 +234,15 @@ export default function StaffPanel() {
           >
             <div>
               <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
-                Kurban #{animal.order_number}
+                Kurban #{animal.no}
               </h2>
+              <h3 className="text-sm sm:text-xl font-bold text-gray-800 mb-2">
+                Kurban #{animal.order_number}
+              </h3>
               <span
-                className={`inline-block px-3 py-1 mb-3 rounded-full text-xs sm:text-sm font-semibold ${getStatusStyleString(animal.status)}`}
+                className={`inline-block px-3 py-1 mb-3 rounded-full text-xs sm:text-sm font-semibold ${getStatusStyleString(
+                  animal.status
+                )}`}
               >
                 {animal.status.label}
               </span>
@@ -207,11 +257,19 @@ export default function StaffPanel() {
               <select
                 value={animal.status.id}
                 onChange={(e) => handleStatusUpdate(animal.id, e.target.value)}
-                className={`w-full p-2 text-sm sm:text-base rounded-md border shadow-sm mb-3 ${getStatusStyleString(animal.status)} focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500`}
-                disabled={updateMutation.isPending && updateMutation.variables?.id === animal.id && !!updateMutation.variables?.data.status_id}
+                className={`w-full p-2 text-sm sm:text-base rounded-md border shadow-sm mb-3 ${getStatusStyleString(
+                  animal.status
+                )} focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500`}
+                disabled={
+                  updateMutation.isPending &&
+                  updateMutation.variables?.id === animal.id &&
+                  !!updateMutation.variables?.data.status_id
+                }
               >
                 {sortedStatuses?.map((status) => (
-                  <option key={status.id} value={status.id}>{status.label}</option>
+                  <option key={status.id} value={status.id}>
+                    {status.label}
+                  </option>
                 ))}
               </select>
               <button
@@ -241,23 +299,32 @@ export default function StaffPanel() {
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700">Kurban Numarası</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Kurban Numarası
+            </label>
             <input
               type="number"
-              {...register('order_number', {
-                required: 'Kurban numarası zorunludur',
-                min: { value: 1, message: 'Kurban numarası 1\'den büyük olmalıdır' }
+              {...register("order_number", {
+                required: "Kurban numarası zorunludur",
+                min: {
+                  value: 1,
+                  message: "Kurban numarası 1'den büyük olmalıdır",
+                },
               })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
             {errors.order_number && (
-              <p className="mt-1 text-sm text-red-600">{errors.order_number.message}</p>
+              <p className="mt-1 text-sm text-red-600">
+                {errors.order_number.message}
+              </p>
             )}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Notlar</label>
+            <label className="block text-sm font-medium text-gray-700">
+              Notlar
+            </label>
             <textarea
-              {...register('notes')}
+              {...register("notes")}
               rows={3}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="İsteğe bağlı notlar..."
@@ -280,14 +347,18 @@ export default function StaffPanel() {
               disabled={createMutation.isPending}
               className="px-4 py-2 text-sm font-medium text-white !bg-blue-600 border border-transparent rounded-md hover:!bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {createMutation.isPending ? 'Ekleniyor...' : 'Ekle'}
+              {createMutation.isPending ? "Ekleniyor..." : "Ekle"}
             </button>
           </div>
         </form>
       </Modal>
 
       <Transition appear show={isDetailModalOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={() => setIsDetailModalOpen(false)}>
+        <Dialog
+          as="div"
+          className="relative z-50"
+          onClose={() => setIsDetailModalOpen(false)}
+        >
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -297,7 +368,10 @@ export default function StaffPanel() {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 !bg-black !bg-opacity-25" />
+            <div
+              className="fixed inset-0"
+              style={{ background: "rgba(220,220,220,0.75)" }}
+            />
           </Transition.Child>
 
           <div className="fixed inset-0 overflow-y-auto">
@@ -322,10 +396,24 @@ export default function StaffPanel() {
                   {selectedAnimal && (
                     <div className="mt-2 space-y-4">
                       <p className="text-sm sm:text-base">
-                         Mevcut Durum: <span className={`font-semibold ${getStatusStyleString(selectedAnimal.status)} px-2 py-0.5 rounded`}>{selectedAnimal.status.label}</span>
+                        Mevcut Durum:{" "}
+                        <span
+                          className={`font-semibold ${getStatusStyleString(
+                            selectedAnimal.status
+                          )} px-2 py-0.5 rounded`}
+                        >
+                          {selectedAnimal.status.label}
+                        </span>
                       </p>
 
-                      {StatusForms[selectedAnimal.status.name] && React.createElement(StatusForms[selectedAnimal.status.name], { animal: selectedAnimal, onUpdate: handleDetailDataChange })}
+                      {StatusForms[selectedAnimal.status.name] &&
+                        React.createElement(
+                          StatusForms[selectedAnimal.status.name],
+                          {
+                            animal: selectedAnimal,
+                            onUpdate: handleDetailDataChange,
+                          }
+                        )}
                     </div>
                   )}
 
@@ -336,7 +424,9 @@ export default function StaffPanel() {
                       onClick={handleDetailSave}
                       disabled={updateMutation.isPending}
                     >
-                      {updateMutation.isPending ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+                      {updateMutation.isPending
+                        ? "Kaydediliyor..."
+                        : "Değişiklikleri Kaydet"}
                     </button>
                     <button
                       type="button"

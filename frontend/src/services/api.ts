@@ -49,8 +49,9 @@ interface KurbanStatus {
 
 interface Animal {
   id: string;
+  no: string;
   order_number: number;
-  status: KurbanStatus;
+  kurban_status: KurbanStatus;
   created_at: string;
   updated_at: string;
   weight?: number;
@@ -59,10 +60,19 @@ interface Animal {
   butcher_name?: string;
   package_count?: number;
   meat_pieces?: MeatPieces;
+  status?: KurbanStatus
 }
 
 // Define interfaces
-interface KurbanCreatePayload {}
+interface KurbanCreatePayload {
+  no: string;
+  status_id?: string;
+  weight?: number;
+  notes?: string;
+  butcher_name?: string;
+  package_count?: number;
+  meat_pieces?: MeatPieces;
+}
 
 interface KurbanUpdatePayload {
   status_id?: string;
@@ -73,6 +83,7 @@ interface KurbanUpdatePayload {
   package_count?: number;
   meat_pieces?: any;
   order_number?: number;
+  no?: string
 }
 
 interface KurbanReorderPayload {
@@ -99,11 +110,11 @@ export const kurban = {
     const response = await api.get(`/kurban/${id}`);
     return response.data;
   },
-  create: async (data: any) => {
+  create: async (data: KurbanCreatePayload) => {
     const response = await api.post('/kurban', data);
     return response.data;
   },
-  update: async (id: string, data: any) => {
+  update: async (id: string, data: KurbanUpdatePayload) => {
     const response = await api.put(`/kurban/${id}`, data);
     return response.data;
   },
@@ -119,58 +130,59 @@ export const kurban = {
     const response = await api.get('/kurban/subscribe');
     return response.data;
   },
-  reorder: async (updates: { id: string; order_number: number }[]) => {
-    const response = await api.post('/kurban/reorder', { updates });
+  reorder: async (data: { draggedId: string; targetId: string }) => {
+    const response = await api.post('/kurban/reorder', data);
     return response.data;
   }
 };
 
 export const status = {
   getAll: async () => {
-    const response = await api.get('/status');
+    const response = await api.get('/statuses');
     return response.data;
   },
   create: async (data: any) => {
-    const response = await api.post('/status', data);
+    const response = await api.post('/statuses', data);
     return response.data;
   },
   update: async (id: string, data: any) => {
-    const response = await api.put(`/status/${id}`, data);
+    const response = await api.put(`/statuses/${id}`, data);
     return response.data;
   },
   delete: async (id: string) => {
-    const response = await api.delete(`/status/${id}`);
+    const response = await api.delete(`/statuses/${id}`);
     return response.data;
   }
 };
 
 export const user = {
   getAll: async () => {
-    const response = await api.get('/user');
+    const response = await api.get('/users');
     return response.data;
   },
   getUsers: async () => {
-    const response = await api.get('/user');
+    const response = await api.get('/users');
     return response.data;
   },
   register: async (email: string, password: string, role: 'admin' | 'staff' = 'staff') => {
-    const response = await api.post('/user', { email, password, role });
+    const response = await api.post('/auth/register', { email, password, role });
     return response.data;
   },
   deleteUser: async (email: string) => {
-    const response = await api.delete(`/user/${email}`);
-    return response.data;
+    console.warn('deleteUser by email is not directly supported by DELETE /users/:id. Implement DELETE /users/:email or use ID.');
+    return Promise.resolve({ message: 'Delete by email not implemented in this function. Use delete(id).' });
   },
   create: async (data: any) => {
-    const response = await api.post('/user', data);
+    console.warn('user.create is likely deprecated. Use user.register instead.');
+    const response = await api.post('/auth/register', data);
     return response.data;
   },
   update: async (id: string, data: any) => {
-    const response = await api.put(`/user/${id}`, data);
-    return response.data;
+    console.warn('User update route not implemented in backend.');
+    return Promise.resolve({ message: 'Update user not implemented.'});
   },
   delete: async (id: string) => {
-    const response = await api.delete(`/user/${id}`);
+    const response = await api.delete(`/users/${id}`);
     return response.data;
   }
 };

@@ -13,13 +13,13 @@ const statusLabels = {
 };
 
 const statusColors = {
-  waiting: 'bg-yellow-50 text-yellow-900 border-yellow-300',
-  slaughtering: 'bg-red-50 text-red-900 border-red-300',
-  skinning: 'bg-orange-50 text-orange-900 border-orange-300',
-  meat_separation: 'bg-purple-50 text-purple-900 border-purple-300',
-  weighing: 'bg-blue-50 text-blue-900 border-blue-300',
-  packaging: 'bg-green-50 text-green-900 border-green-300',
-  done: 'bg-gray-50 text-gray-900 border-gray-300'
+  waiting: '!bg-yellow-50 text-yellow-900 border-yellow-300',
+  slaughtering: '!bg-red-50 text-red-900 border-red-300',
+  skinning: '!bg-orange-50 text-orange-900 border-orange-300',
+  meat_separation: '!bg-purple-50 text-purple-900 border-purple-300',
+  weighing: '!bg-blue-50 text-blue-900 border-blue-300',
+  packaging: '!bg-green-50 text-green-900 border-green-300',
+  done: '!bg-gray-50 text-gray-900 border-gray-300'
 };
 
 interface Animal {
@@ -50,13 +50,13 @@ export default function UserInquiry() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-8">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Kurban Takibi</h1>
-        <p className="text-gray-700">Kurban durumunu kontrol etmek için Kurban numaranızı giriniz</p>
+    <div className="max-w-md sm:max-w-2xl mx-auto p-4 sm:p-8">
+      <div className="text-center mb-8 sm:mb-12">
+        <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-2">Kurban Takibi</h1>
+        <p className="text-sm sm:text-base text-gray-700">Kurban durumunu kontrol etmek için Kurban numaranızı giriniz</p>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg p-8 mb-8">
+      <div className="!bg-white rounded-xl shadow-lg p-4 sm:p-8 mb-6 sm:mb-8">
         <form onSubmit={handleSearch} className="space-y-4">
           <div className="relative">
             <input
@@ -64,13 +64,13 @@ export default function UserInquiry() {
               value={orderNumber}
               onChange={(e) => setOrderNumber(e.target.value)}
               placeholder="Kurban numaranızı giriniz"
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 transition-all duration-200 text-gray-900 placeholder-gray-500 bg-white"
+              className="w-full px-3 py-2 sm:px-4 sm:py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 transition-all duration-200 text-sm sm:text-base text-gray-900 placeholder-gray-500 !bg-white"
               required
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-indigo-700 text-white px-6 py-3 rounded-lg hover:bg-indigo-800 transition-colors duration-200 font-medium shadow-sm"
+            className="w-full !bg-indigo-700 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg hover:!bg-indigo-800 transition-colors duration-200 text-sm sm:text-base font-medium shadow-sm"
           >
             Kurban Ara
           </button>
@@ -79,12 +79,12 @@ export default function UserInquiry() {
 
       {isLoading && (
         <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+          <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-t-2 border-b-2 border-indigo-600"></div>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+        <div className="!bg-red-50 border-l-4 border-red-500 p-3 sm:p-4 rounded-lg">
           <div className="flex">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
@@ -108,14 +108,14 @@ export default function UserInquiry() {
                   Başlangıç: {new Date(animal.created_at).toLocaleString('tr-TR')}
                 </p>
               </div>
-              <span className="px-4 py-2 rounded-full text-sm font-semibold bg-white bg-opacity-75">
+              <span className="px-4 py-2 rounded-full text-sm font-semibold !bg-white !bg-opacity-75">
                 {statusLabels[animal.status]}
               </span>
             </div>
 
             <div className="mt-6">
               <div className="relative">
-                <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-white bg-opacity-75">
+                <div className="overflow-hidden h-2 mb-4 text-xs flex rounded !bg-white !bg-opacity-75">
                   <div
                     style={{
                       width: `${
@@ -123,7 +123,7 @@ export default function UserInquiry() {
                         (100 / Object.keys(statusLabels).length)
                       }%`
                     }}
-                    className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-indigo-700"
+                    className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center !bg-indigo-700"
                   ></div>
                 </div>
               </div>

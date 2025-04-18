@@ -1,23 +1,33 @@
 const express = require('express');
 const router = express.Router();
-const { auth, adminOnly, staffOnly } = require('../middleware/auth');
+const { auth, adminOnly, staffOnly, authorize } = require('../middleware/auth');
 
-// Get all animals
+// Get all animals (public)
 router.get('/', async (req, res) => {
   try {
-    const { data, error } = await req.app.locals.supabase
+    const supabase = req.app.locals.supabase;
+    // Join with kurban_statuses to get status details
+    const { data, error } = await supabase
       .from('kurban')
-      .select('*')
-      .order('created_at', { ascending: true });
+      // Select needed fields from kurban and all fields (*) or specific fields from status
+      .select(`
+        id, order_number, created_at, updated_at, weight, notes, slaughter_time, butcher_name, package_count, meat_pieces,
+        status:kurban_statuses ( id, name, label, color_bg, color_text, color_border, display_order )
+      `)
+      .order('order_number', { ascending: true }); // Order by kurban order_number
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error fetching kurbans with statuses:", error);
+      return res.status(500).json({ error: 'Failed to fetch kurbans' });
+    }
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Server error fetching kurbans:", error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// Search animal by order number
+// Search animal by order number (public)
 router.get('/search/order/:orderNumber', async (req, res) => {
   try {
     const { data, error } = await req.app.locals.supabase
@@ -39,7 +49,7 @@ router.get('/search/order/:orderNumber', async (req, res) => {
   }
 });
 
-// Subscribe to real-time updates
+// Subscribe to real-time updates (public)
 router.get('/subscribe', (req, res) => {
   try {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -48,20 +58,48 @@ router.get('/subscribe', (req, res) => {
 
     const channel = req.app.locals.supabase
       .channel('kurban_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'kurban' }, (payload) => {
-        res.write(`data: ${JSON.stringify(payload)}\n\n`);
-      })
+      .on('postgres_changes',
+          { event: '*' /* or INSERT, UPDATE */, schema: 'public', table: 'kurban' },
+          async (payload) => {
+              // When a change occurs, fetch the full kurban data including the status details
+              if (payload.new && payload.new.id) {
+                  const supabase = req.app.locals.supabase;
+                  const { data: kurbanData, error: kurbanError } = await supabase
+                    .from('kurban')
+                    .select(`
+                        id, order_number, created_at, updated_at, weight, notes, slaughter_time, butcher_name, package_count, meat_pieces,
+                        status:kurban_statuses ( id, name, label, color_bg, color_text, color_border, display_order )
+                    `)
+                    .eq('id', payload.new.id)
+                    .single();
+
+                if (kurbanError) {
+                    console.error("Error fetching updated kurban for SSE:", kurbanError);
+                } else if (kurbanData) {
+                     // Send the enriched data (including status object)
+                     res.write(`data: ${JSON.stringify({ ...payload, new: kurbanData })}\n\n`);
+                } else {
+                    // Handle case where kurban might have been deleted concurrently? Or just send basic payload.
+                     res.write(`data: ${JSON.stringify(payload)}\n\n`);
+                }
+              } else {
+                  // Send the raw payload if it doesn't have new.id (e.g., DELETE)
+                  res.write(`data: ${JSON.stringify(payload)}\n\n`);
+              }
+          }
+      )
       .subscribe();
 
     req.on('close', () => {
       req.app.locals.supabase.removeChannel(channel);
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+     console.error("SSE setup error:", error);
+     // Cannot send 500 here as headers might be sent
   }
 });
 
-// Get specific animal
+// Get specific animal (public)
 router.get('/:id', async (req, res) => {
   try {
     const { data, error } = await req.app.locals.supabase
@@ -79,113 +117,180 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create new animal entry (staff only)
-router.post('/', auth, staffOnly, async (req, res) => {
+// Create new animal entry (Staff/Admin only)
+router.post('/', auth, authorize(['staff', 'admin']), async (req, res) => {
   try {
-    const { order_number } = req.body;
+    const supabase = req.app.locals.supabase;
+    const { order_number, notes } = req.body;
 
-    // Check if order number already exists
-    const { data: existing, error: checkError } = await req.app.locals.supabase
-      .from('kurban')
+    // Validate order_number
+    if (!order_number) {
+      return res.status(400).json({ error: 'Kurban numarası zorunludur' });
+    }
+
+    // Convert order_number to number if it's a string
+    const orderNumber = typeof order_number === 'string' ? parseInt(order_number) : order_number;
+
+    if (isNaN(orderNumber) || orderNumber <= 0) {
+      return res.status(400).json({ error: 'Geçerli bir kurban numarası girmelisiniz' });
+    }
+
+    // 1. Find the default status ID ('waiting')
+    const { data: defaultStatus, error: statusError } = await supabase
+      .from('kurban_statuses')
       .select('id')
-      .eq('order_number', order_number)
+      .eq('name', 'waiting')
       .single();
 
-    if (checkError && checkError.code !== 'PGRST116') throw checkError;
-    if (existing) return res.status(400).json({ error: 'Order number already exists' });
+    if (statusError) {
+      console.error('Error finding default status:', statusError);
+      return res.status(500).json({ error: 'Durum bilgisi alınamadı', details: statusError.message });
+    }
 
-    const { data, error } = await req.app.locals.supabase
+    if (!defaultStatus) {
+      return res.status(500).json({ error: 'Varsayılan durum bulunamadı' });
+    }
+
+    // 2. Check if order_number already exists
+    const { data: existingKurban, error: checkError } = await supabase
+      .from('kurban')
+      .select('order_number')
+      .eq('order_number', orderNumber)
+      .single();
+
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.error('Error checking order number:', checkError);
+      return res.status(500).json({ error: 'Kurban numarası kontrolü yapılamadı', details: checkError.message });
+    }
+
+    if (existingKurban) {
+      return res.status(409).json({ error: 'Bu kurban numarası zaten kullanılıyor' });
+    }
+
+    // 3. Insert the new kurban with the provided order_number and default status_id
+    const { data, error } = await supabase
       .from('kurban')
       .insert([
         {
-          order_number,
-          status: 'waiting',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          meat_pieces: {
-            leg: 0,
-            arm: 0,
-            chest: 0,
-            back: 0,
-            ground: 0
-          }
-        }
+          order_number: orderNumber,
+          status_id: defaultStatus.id,
+          notes: notes || null,
+          meat_pieces: { leg: 0, arm: 0, chest: 0, back: 0, ground: 0 }
+        },
       ])
-      .select()
+      .select(`
+        id, order_number, created_at, updated_at, weight, notes, slaughter_time, butcher_name, package_count, meat_pieces,
+        status:kurban_statuses ( id, name, label, color_bg, color_text, color_border, display_order )
+      `)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase insert error:', error);
+      if (error.code === '23505') {
+        return res.status(409).json({ error: 'Bu kurban numarası zaten kullanılıyor' });
+      }
+      return res.status(500).json({
+        error: 'Kurban eklenirken bir hata oluştu',
+        details: error.message || 'Bilinmeyen veritabanı hatası'
+      });
+    }
+
     res.status(201).json(data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    console.error('Server error:', err);
+    res.status(500).json({
+      error: 'Sunucu hatası',
+      details: err.message || 'Bilinmeyen hata'
+    });
   }
 });
 
 // Update animal (staff only)
-router.put('/:id', auth, staffOnly, async (req, res) => {
+router.put('/:id', auth, authorize(['staff', 'admin']), async (req, res) => {
   try {
-    const updates = { ...req.body, updated_at: new Date().toISOString() };
+    const supabase = req.app.locals.supabase;
+    const kurbanId = req.params.id;
+    const userId = req.user.id;
+    const { status_id, ...otherUpdates } = req.body; // Separate status_id
 
-    // Get current status for logging
-    const { data: currentData, error: fetchError } = await req.app.locals.supabase
-      .from('kurban')
-      .select('status, meat_pieces')
-      .eq('id', req.params.id)
-      .single();
+    // Prepare updates object
+    const updates = {
+        ...otherUpdates,
+        status_id, // Include status_id if provided
+        updated_at: new Date().toISOString()
+    };
 
-    if (fetchError) throw fetchError;
-
-    // If updating meat_pieces, merge with existing data
-    if (updates.meat_pieces && currentData.meat_pieces) {
-      updates.meat_pieces = {
-        ...currentData.meat_pieces,
-        ...updates.meat_pieces
-      };
-    }
-
-    // Update animal
-    const { data, error } = await req.app.locals.supabase
+    // Update the kurban
+    const { data, error } = await supabase
       .from('kurban')
       .update(updates)
-      .eq('id', req.params.id)
-      .select()
+      .eq('id', kurbanId)
+      .select(`
+        id, order_number, created_at, updated_at, weight, notes, slaughter_time, butcher_name, package_count, meat_pieces,
+        status:kurban_statuses ( id, name, label, color_bg, color_text, color_border, display_order )
+      `)
       .single();
 
-    if (error) throw error;
-
-    // Log status change if status was updated
-    if (updates.status && updates.status !== currentData.status) {
-      await req.app.locals.supabase
-        .from('status_logs')
-        .insert([
-          {
-            kurban_id: req.params.id,
-            old_status: currentData.status,
-            new_status: updates.status,
-            changed_by: req.user.id,
-            changed_at: new Date().toISOString()
-          }
-        ]);
+    if (error) {
+      console.error('Error updating kurban:', error);
+      return res.status(500).json({ error: 'Failed to update kurban' });
     }
 
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Delete animal (admin only)
-router.delete('/:id', auth, adminOnly, async (req, res) => {
+router.delete('/:id', auth, authorize(['admin']), async (req, res) => {
   try {
-    const { error } = await req.app.locals.supabase
+    const supabase = req.app.locals.supabase;
+    const kurbanId = req.params.id;
+
+    const { error } = await supabase
       .from('kurban')
       .delete()
-      .eq('id', req.params.id);
+      .eq('id', kurbanId);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error deleting kurban:', error);
+      return res.status(500).json({ error: 'Failed to delete kurban' });
+    }
+
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Reorder animals (admin only)
+router.post('/reorder', auth, authorize(['admin']), async (req, res) => {
+  try {
+    const supabase = req.app.locals.supabase;
+    const { draggedId, targetId } = req.body;
+
+    if (!draggedId || !targetId) {
+      return res.status(400).json({ error: 'Missing required fields: draggedId and targetId' });
+    }
+
+    // Call the reorder_kurbans function
+    const { error } = await supabase.rpc('reorder_kurbans', {
+      dragged_id: draggedId,
+      target_id: targetId
+    });
+
+    if (error) {
+      console.error('Error reordering kurbans:', error);
+      return res.status(500).json({ error: 'Failed to reorder kurbans' });
+    }
+
+    res.json({ message: 'Kurbans reordered successfully' });
+  } catch (error) {
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

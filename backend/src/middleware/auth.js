@@ -42,9 +42,28 @@ exports.auth = asyncHandler(async (req, res, next) => {
 });
 
 // Grant access to specific roles
-exports.authorize = (...roles) => {
+exports.authorize = (allowedRoles) => {
+  // Ensure allowedRoles is always an array
+  if (!Array.isArray(allowedRoles)) {
+    // Handle cases where it might be called incorrectly (e.g., authorize('admin') instead of authorize(['admin']))
+    // You could throw an error or default to a restrictive state
+    console.error("Authorization middleware called with non-array roles:", allowedRoles);
+    // For safety, deny access if configuration is wrong
+    allowedRoles = [];
+  }
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    // Check if user is attached by the 'auth' middleware
+    if (!req.user || !req.user.role) {
+         return next(
+           new ErrorResponse(
+             `Authentication data missing, cannot authorize access`,
+             401 // Or 500 if it indicates a server setup issue
+           )
+         );
+    }
+
+    // Now check includes on the correctly passed array
+    if (!allowedRoles.includes(req.user.role)) {
       return next(
         new ErrorResponse(
           `User role ${req.user.role} is not authorized to access this route`,

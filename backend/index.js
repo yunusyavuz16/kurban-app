@@ -1,26 +1,48 @@
-const dotenv = require('dotenv');
-const path = require('path');
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
 
-// Load environment variables before anything else
-dotenv.config({ path: path.resolve(__dirname, '.env') });
+const kurbanRoutes = require('./src/routes/kurban');
+const authRoutes = require('./src/routes/auth');
+const userRoutes = require('./src/routes/users');
+const statusRoutes = require('./src/routes/statuses');
 
-// Verify environment variables
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
-  console.error('Missing required environment variables:');
-  console.error('SUPABASE_URL:', process.env.SUPABASE_URL ? '✓' : '✗');
-  console.error('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? '✓' : '✗');
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Supabase Client Initialization
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
+  console.error('Missing required Supabase environment variables');
   process.exit(1);
 }
 
-// Import and start the server
-const app = require('./src/server');
-const port = process.env.PORT || 3001;
+// Initialize both clients
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-  console.log('Environment:', {
-    SUPABASE_URL: process.env.SUPABASE_URL ? '✓' : '✗',
-    SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ? '✓' : '✗',
-    PORT: process.env.PORT || 3001
-  });
+// Make Supabase clients available to routes
+app.locals.supabase = supabase;
+app.locals.supabaseAdmin = supabaseAdmin;
+
+// Routes
+app.use('/api/kurban', kurbanRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/statuses', statusRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something broke!' });
 });
+
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

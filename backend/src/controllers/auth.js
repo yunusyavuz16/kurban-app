@@ -10,45 +10,124 @@ exports.register = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        error: 'Please provide email and password'
+        error: 'Please provide email and password',
       });
     }
 
-    // Create user in Supabase
-    const { data: user, error } = await req.app.locals.supabaseAdmin.auth.admin.createUser({
+    // First, check if user exists in auth.users
+    const { data: authUser, error: authError } = await req.app.locals.supabaseAdmin.auth.admin
+      .listUsers();
+
+    const existingAuthUser = authUser?.users?.find(user => user.email === email);
+
+    // If user exists in auth.users, update their role in the users table
+    if (existingAuthUser) {
+      console.log('User exists in auth.users, updating role...');
+
+      // Try to update the user in users table
+      const { data: updatedUser, error: updateError } = await req.app.locals.supabaseAdmin
+        .from('users')
+        .upsert([
+          {
+            id: existingAuthUser.id,
+            email: existingAuthUser.email,
+            role: role || 'staff',
+          }
+        ])
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Error updating user role:', updateError);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to update user role',
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: updatedUser,
+        message: 'User role updated successfully',
+      });
+    }
+
+    // If user doesn't exist, create new user
+    const { data: { user }, error } = await req.app.locals.supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true
+      email_confirm: true,
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase Auth Error:', error);
+      throw new Error('Failed to create user in Supabase');
+    }
 
-    // Add role to user metadata
-    const { error: metadataError } = await req.app.locals.supabaseAdmin
+    if (!user) {
+      console.error('No user data returned from Supabase');
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to create user in Supabase',
+      });
+    }
+
+    console.log('Created user:', user);
+
+    // Add role to user metadata using upsert instead of insert
+    const { data: userData, error: metadataError } = await req.app.locals.supabaseAdmin
       .from('users')
-      .insert([
+      .upsert([
         {
           id: user.id,
           email: user.email,
-          role: role || 'staff'
+          role: role || 'staff',
         }
-      ]);
+      ])
+      .select()
+      .single();
 
-    if (metadataError) throw metadataError;
+    if (metadataError) {
+      console.error('Supabase Metadata Error:', metadataError);
+      // Even if metadata insertion fails, the user was created successfully
+      return res.status(201).json({
+        success: true,
+        data: {
+          id: user.id,
+          email: user.email,
+          role: role || 'staff',
+        },
+        message: 'User created but role assignment may need review',
+      });
+    }
 
     res.status(201).json({
       success: true,
-      data: {
-        id: user.id,
-        email: user.email,
-        role: role || 'staff'
-      }
+      data: userData,
     });
   } catch (err) {
     console.error('Registration error:', err);
+
+    // Check if user was actually created despite the error
+    if (err.message === 'Failed to create user in Supabase') {
+      const { data: existingUser } = await req.app.locals.supabaseAdmin
+        .from('users')
+        .select('*')
+        .eq('email', req.body.email)
+        .single();
+
+      if (existingUser) {
+        return res.status(200).json({
+          success: true,
+          data: existingUser,
+          message: 'User was actually created successfully',
+        });
+      }
+    }
+
     res.status(400).json({
       success: false,
-      error: err.message
+      error: err.message,
     });
   }
 };

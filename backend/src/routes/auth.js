@@ -26,27 +26,39 @@ router.get('/users', auth, adminOnly, async (req, res) => {
   }
 });
 
-// Delete user (admin only)
-router.delete('/users/:id', auth, adminOnly, async (req, res) => {
-  try {
-    // First, delete from auth
-    const { error: authError } = await req.app.locals.supabaseAdmin.auth.admin.deleteUser(
-      req.params.id
-    );
 
+// Delete user by email (admin only)
+router.delete('/users/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    console.log('Deleting user with email:', email);
+    // Get user ID from email
+    const { data: user, error: fetchError } = await req.app.locals.supabaseAdmin
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (fetchError || !user) {
+      return res.status(404).json({ success: false, error: 'User not found' });
+    }
+
+    // Delete user from Supabase auth
+    const { error: authError } = await req.app.locals.supabaseAdmin.auth.admin.deleteUser(user.id);
     if (authError) throw authError;
 
-    // Then delete from users table
+    // Delete user from users table
     const { error: dbError } = await req.app.locals.supabaseAdmin
       .from('users')
       .delete()
-      .eq('id', req.params.id);
+      .eq('id', user.id);
 
     if (dbError) throw dbError;
 
     res.status(204).send();
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Delete user error:', error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

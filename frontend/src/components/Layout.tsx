@@ -1,5 +1,6 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { auth } from "../services/api";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -7,51 +8,95 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navItems = [
-    { path: '/tv', label: 'TV Ekranı' },
-    { path: '/staff', label: 'Personel Paneli' },
-    { path: '/inquiry', label: 'Kurban Sorgula' },
-    { path: '/admin', label: 'Yönetici Paneli' },
+    { path: "/staff", label: "Personel Paneli" },
+    { path: "/admin", label: "Yönetici Paneli" },
   ];
 
+  const handleLogout = () => {
+    auth.logout();
+    navigate("/login");
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen flex flex-col !bggradient-to-br from-gray-50 to-gray-100">
       {/* Navigation */}
-      <nav className="bg-white shadow-lg">
+      <nav className="!bgwhite shadow-lg w-full z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex">
+          {/* Main Nav container - Adjust flex direction for mobile */}
+          <div className="flex flex-col sm:flex-row items-center justify-between h-auto sm:h-16 py-2 sm:py-0">
+            {/* Logo and Title Section - Allow stacking */}
+            <div className="flex items-center mb-2 sm:mb-0">
+              <div className="flex items-center justify-center">
+                <img
+                  src="/react.png"
+                  alt="Kurban Takip Logo"
+                  className="h-10 w-10 mr-2"
+                />
+              </div>
               <div className="flex-shrink-0 flex items-center">
-                <h1 className="text-2xl font-bold text-gray-800">Kurban Takip</h1>
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
+                  Kurban Takip
+                </h1>
               </div>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`${
-                      location.pathname === item.path
-                        ? 'border-indigo-500 text-gray-900'
-                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                    } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
+            </div>
+
+            {/* Desktop Navigation Links */}
+            <div className="hidden sm:flex sm:space-x-8">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`${
+                    location.pathname === item.path
+                      ? "border-indigo-500 text-gray-900"
+                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Mobile Navigation Links (Displayed below logo/title on mobile) */}
+            <div className="flex sm:hidden space-x-4 mt-2 sm:mt-0">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`${
+                    location.pathname === item.path
+                      ? "border-indigo-500 text-gray-900"
+                      : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                  } inline-flex items-center px-1 pt-1 border-b-2 text-xs font-medium`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Logout Button - Center on mobile, align right on larger */}
+            <div className="flex items-center mt-2 sm:mt-0 sm:ml-6">
+              <button
+                onClick={handleLogout}
+                className="w-full sm:w-auto px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-white !bgred-600 rounded-md hover:!bgred-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200"
+              >
+                Çıkış Yap
+              </button>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Main content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      {/* Main content - Added padding for mobile */}
+      <main className="flex-grow max-w-7xl w-full mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {children}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white shadow-lg mt-auto">
+      {/* Footer - Remains the same, already simple */}
+      <footer className="!bgwhite shadow-lg mt-auto w-full">
         <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
           <p className="text-center text-gray-500 text-sm">
             © {new Date().getFullYear()} Kurban Takip. Tüm hakları saklıdır.

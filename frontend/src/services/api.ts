@@ -35,6 +35,10 @@ export const auth = {
     const response = await api.get('/auth/users');
     return response.data;
   },
+  deleteUser: async (email: string) => {
+    const response = await api.delete(`/auth/users/${email}`);
+    return response.data;
+  },
   logout: () => {
     localStorage.removeItem('token');
   }
@@ -48,10 +52,20 @@ interface MeatPieces {
   ground?: number;
 }
 
+interface KurbanStatus {
+  id: string;
+  name: string;
+  label: string;
+  color_bg: string;
+  color_text: string;
+  color_border: string;
+  display_order: number;
+}
+
 interface Animal {
   id: string;
   order_number: number;
-  status: string;
+  status: KurbanStatus;
   created_at: string;
   updated_at: string;
   weight?: number;
@@ -60,6 +74,34 @@ interface Animal {
   butcher_name?: string;
   package_count?: number;
   meat_pieces?: MeatPieces;
+}
+
+// Define interfaces
+interface KurbanCreatePayload {}
+
+interface KurbanUpdatePayload {
+  status_id?: string;
+  weight?: number;
+  notes?: string;
+  slaughter_time?: string;
+  butcher_name?: string;
+  package_count?: number;
+  meat_pieces?: any;
+  order_number?: number;
+}
+
+interface KurbanReorderPayload {
+  draggedId: string;
+  targetId: string;
+}
+
+interface StatusPayload {
+  name: string;
+  label: string;
+  color_bg: string;
+  color_text: string;
+  color_border: string;
+  display_order: number;
 }
 
 // Kurban APIs
@@ -76,11 +118,11 @@ export const kurban = {
     const response = await api.get(`/kurban/search/order/${orderNumber}`);
     return response.data;
   },
-  create: async (data: { order_number: number }): Promise<Animal> => {
+  create: async (data: KurbanCreatePayload): Promise<Animal> => {
     const response = await api.post('/kurban', data);
     return response.data;
   },
-  update: async (id: string, data: Partial<Animal>): Promise<Animal> => {
+  update: async (id: string, data: KurbanUpdatePayload): Promise<Animal> => {
     const response = await api.put(`/kurban/${id}`, data);
     return response.data;
   },
@@ -104,9 +146,30 @@ export const kurban = {
     return () => {
       eventSource.close();
     };
+  },
+  reorder: (payload: KurbanReorderPayload): Promise<{ success: boolean; message: string }> =>
+    api.post("/kurban/reorder", payload).then((res) => res.data),
+};
+
+export const statuses = {
+  getAll: async (): Promise<KurbanStatus[]> => {
+    const response = await api.get('/statuses');
+    return response.data;
+  },
+  create: async (data: StatusPayload): Promise<KurbanStatus> => {
+    const response = await api.post('/statuses', data);
+    return response.data;
+  },
+  update: async (id: string, data: StatusPayload): Promise<KurbanStatus> => {
+    const response = await api.put(`/statuses/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: string) => {
+    const response = await api.delete(`/statuses/${id}`);
+    return response.data;
   }
 };
 
-export type { Animal, MeatPieces };
+export type { Animal, MeatPieces, KurbanStatus, KurbanUpdatePayload, StatusPayload, KurbanReorderPayload };
 
 export default api;

@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth, User } from '../services/auth';
+import { auth } from '../services/api';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+
+interface User {
+  id: string;
+  email: string;
+  role: 'admin' | 'staff';
+}
 
 interface AuthContextType {
   user: User | null;
@@ -8,9 +15,6 @@ interface AuthContextType {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  isAuthenticated: boolean;
-  isAdmin: boolean;
-  isStaff: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,31 +23,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        if (auth.isAuthenticated()) {
-          const userData = await auth.getCurrentUser();
-          setUser(userData);
+    const token = localStorage.getItem('token');
+    if (token) {
+      // Fetch user data using the token
+      const fetchUser = async () => {
+        try {
+          const response = await axios.get('/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setUser(response.data);
+          // Redirect based on role if not already on the correct page
+          if (response.data.role === 'admin' && !window.location.pathname.startsWith('/admin')) {
+            navigate('/admin');
+          } else if (response.data.role === 'staff' && !window.location.pathname.startsWith('/staff')) {
+            navigate('/staff');
+          }
+        } catch (err) {
+          console.error('Error fetching user:', err);
+          localStorage.removeItem('token');
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error('Auth initialization error:', err);
-        auth.logout();
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initAuth();
-  }, []);
+      };
+      fetchUser();
+    } else {
+      setLoading(false);
+    }
+  }, [navigate]);
 
   const login = async (email: string, password: string) => {
     try {
       setError(null);
       const { token, user: userData } = await auth.login(email, password);
-      auth.setToken(token);
       setUser(userData);
+
+      // Redirect based on role after successful login
+      if (userData.role === 'admin') {
+        navigate('/admin');
+      } else if (userData.role === 'staff') {
+        navigate('/staff');
+      }
     } catch (err) {
       console.error('Login error:', err);
       if (axios.isAxiosError(err)) {
@@ -64,6 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     auth.logout();
     setUser(null);
+    navigate('/login');
   };
 
   const value = {
@@ -71,19 +94,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     error,
     login,
-    logout,
-    isAuthenticated: !!user,
-    isAdmin: user?.role === 'admin',
-    isStaff: user?.role === 'staff' || user?.role === 'admin'
+    logout
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-      </div>
-    );
-  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

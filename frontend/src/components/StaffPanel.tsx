@@ -1,6 +1,6 @@
 import React, { useState, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { kurban, statuses } from '../services/api';
+import { kurban, status } from '../services/api';
 import type { Animal, KurbanStatus, KurbanUpdatePayload } from '../services/api';
 import { Dialog, Transition } from '@headlessui/react';
 import { useForm } from 'react-hook-form';
@@ -51,7 +51,7 @@ export default function StaffPanel() {
 
   const { data: kurbanStatuses, isLoading: isLoadingStatuses } = useQuery<KurbanStatus[]>({
     queryKey: ['statuses'],
-    queryFn: statuses.getAll,
+    queryFn: status.getAll,
     staleTime: 60 * 1000 * 5,
   });
 

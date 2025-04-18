@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { kurban, auth, statuses } from "../services/api";
+import { kurban, user, status } from "../services/api";
 import type { KurbanStatus, StatusPayload } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import KurbanOrderManager from "./KurbanOrderManager";
@@ -50,12 +50,12 @@ export default function AdminPanel() {
 
   const { data: users, isLoading: isLoadingUsers } = useQuery<User[]>({
     queryKey: ["users"],
-    queryFn: auth.getUsers,
+    queryFn: user.getUsers,
   });
 
   const { data: kurbanStatuses, isLoading: isLoadingStatuses } = useQuery<KurbanStatus[]>({
     queryKey: ['statuses'],
-    queryFn: statuses.getAll,
+    queryFn: status.getAll,
   });
 
   const createUserMutation = useMutation({
@@ -68,7 +68,7 @@ export default function AdminPanel() {
       password: string;
       role: "admin" | "staff";
     }) => {
-      const response = await auth.register(email, password, role);
+      const response = await user.register(email, password, role);
       return response;
     },
     onSuccess: () => {
@@ -80,7 +80,7 @@ export default function AdminPanel() {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (email: string) => {
-      await auth.deleteUser(email);
+      await user.deleteUser(email);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] }); // Kullanıcı listesini güncelle
@@ -99,9 +99,9 @@ export default function AdminPanel() {
         display_order: Number(formData.display_order) || 0,
       };
       if (formData.id) {
-        return await statuses.update(formData.id, payload);
+        return await status.update(formData.id, payload);
       } else {
-        return await statuses.create(payload);
+        return await status.create(payload);
       }
     },
     onSuccess: () => {
@@ -118,7 +118,7 @@ export default function AdminPanel() {
   const deleteStatusMutation = useMutation({
     mutationFn: async (statusId: string) => {
       setStatusError(null);
-      return await statuses.delete(statusId);
+      return await status.delete(statusId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['statuses'] });

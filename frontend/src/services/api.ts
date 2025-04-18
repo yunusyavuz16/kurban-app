@@ -9,7 +9,7 @@ const api = axios.create({
   },
 });
 
-// Add request interceptor to include auth token
+// Add token to requests if it exists
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -22,21 +22,6 @@ api.interceptors.request.use((config) => {
 export const auth = {
   login: async (email: string, password: string) => {
     const response = await api.post('/auth/login', { email, password });
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
-    }
-    return response.data;
-  },
-  register: async (email: string, password: string, role: 'admin' | 'staff' = 'staff') => {
-    const response = await api.post('/auth/register', { email, password, role });
-    return response.data;
-  },
-  getUsers: async () => {
-    const response = await api.get('/auth/users');
-    return response.data;
-  },
-  deleteUser: async (email: string) => {
-    const response = await api.delete(`/auth/users/${email}`);
     return response.data;
   },
   logout: () => {
@@ -106,23 +91,19 @@ interface StatusPayload {
 
 // Kurban APIs
 export const kurban = {
-  getAll: async (): Promise<Animal[]> => {
+  getAll: async () => {
     const response = await api.get('/kurban');
     return response.data;
   },
-  getById: async (id: string): Promise<Animal> => {
+  getById: async (id: string) => {
     const response = await api.get(`/kurban/${id}`);
     return response.data;
   },
-  searchByOrderNumber: async (orderNumber: number): Promise<Animal> => {
-    const response = await api.get(`/kurban/search/order/${orderNumber}`);
-    return response.data;
-  },
-  create: async (data: KurbanCreatePayload): Promise<Animal> => {
+  create: async (data: any) => {
     const response = await api.post('/kurban', data);
     return response.data;
   },
-  update: async (id: string, data: KurbanUpdatePayload): Promise<Animal> => {
+  update: async (id: string, data: any) => {
     const response = await api.put(`/kurban/${id}`, data);
     return response.data;
   },
@@ -130,42 +111,66 @@ export const kurban = {
     const response = await api.delete(`/kurban/${id}`);
     return response.data;
   },
-  subscribe: (onUpdate: (data: any) => void) => {
-    const eventSource = new EventSource(`${API_URL}/kurban/subscribe`);
-
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      onUpdate(data);
-    };
-
-    eventSource.onerror = (error) => {
-      console.error('SSE Error:', error);
-      eventSource.close();
-    };
-
-    return () => {
-      eventSource.close();
-    };
+  search: async (orderNumber: string) => {
+    const response = await api.get(`/kurban/search?orderNumber=${orderNumber}`);
+    return response.data;
   },
-  reorder: (payload: KurbanReorderPayload): Promise<{ success: boolean; message: string }> =>
-    api.post("/kurban/reorder", payload).then((res) => res.data),
+  subscribe: async () => {
+    const response = await api.get('/kurban/subscribe');
+    return response.data;
+  },
+  reorder: async (updates: { id: string; order_number: number }[]) => {
+    const response = await api.post('/kurban/reorder', { updates });
+    return response.data;
+  }
 };
 
-export const statuses = {
-  getAll: async (): Promise<KurbanStatus[]> => {
-    const response = await api.get('/statuses');
+export const status = {
+  getAll: async () => {
+    const response = await api.get('/status');
     return response.data;
   },
-  create: async (data: StatusPayload): Promise<KurbanStatus> => {
-    const response = await api.post('/statuses', data);
+  create: async (data: any) => {
+    const response = await api.post('/status', data);
     return response.data;
   },
-  update: async (id: string, data: StatusPayload): Promise<KurbanStatus> => {
-    const response = await api.put(`/statuses/${id}`, data);
+  update: async (id: string, data: any) => {
+    const response = await api.put(`/status/${id}`, data);
     return response.data;
   },
   delete: async (id: string) => {
-    const response = await api.delete(`/statuses/${id}`);
+    const response = await api.delete(`/status/${id}`);
+    return response.data;
+  }
+};
+
+export const user = {
+  getAll: async () => {
+    const response = await api.get('/user');
+    return response.data;
+  },
+  getUsers: async () => {
+    const response = await api.get('/user');
+    return response.data;
+  },
+  register: async (email: string, password: string, role: 'admin' | 'staff' = 'staff') => {
+    const response = await api.post('/user', { email, password, role });
+    return response.data;
+  },
+  deleteUser: async (email: string) => {
+    const response = await api.delete(`/user/${email}`);
+    return response.data;
+  },
+  create: async (data: any) => {
+    const response = await api.post('/user', data);
+    return response.data;
+  },
+  update: async (id: string, data: any) => {
+    const response = await api.put(`/user/${id}`, data);
+    return response.data;
+  },
+  delete: async (id: string) => {
+    const response = await api.delete(`/user/${id}`);
     return response.data;
   }
 };

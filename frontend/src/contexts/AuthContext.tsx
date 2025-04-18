@@ -28,22 +28,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      // Fetch user data using the token
       const fetchUser = async () => {
         try {
           const response = await axios.get('/api/auth/me', {
             headers: { Authorization: `Bearer ${token}` }
           });
           setUser(response.data);
-          // Redirect based on role if not already on the correct page
-          if (response.data.role === 'admin' && !window.location.pathname.startsWith('/admin')) {
+          // Redirect based on role
+          if (response.data.role === 'admin') {
             navigate('/admin');
-          } else if (response.data.role === 'staff' && !window.location.pathname.startsWith('/staff')) {
+          } else if (response.data.role === 'staff') {
             navigate('/staff');
           }
         } catch (err) {
           console.error('Error fetching user:', err);
           localStorage.removeItem('token');
+          setUser(null);
+          navigate('/login');
         } finally {
           setLoading(false);
         }
@@ -58,9 +59,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setError(null);
       const { token, user: userData } = await auth.login(email, password);
+      localStorage.setItem('token', token);
       setUser(userData);
 
-      // Redirect based on role after successful login
+      // Redirect based on role
       if (userData.role === 'admin') {
         navigate('/admin');
       } else if (userData.role === 'staff') {
@@ -84,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    auth.logout();
+    localStorage.removeItem('token');
     setUser(null);
     navigate('/login');
   };

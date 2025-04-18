@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { kurban, statuses } from '../services/api';
+import { kurban, status } from '../services/api';
 import type { Animal, KurbanStatus } from '../services/api';
 
 // Define environment variables type
@@ -32,7 +32,7 @@ export default function TVDisplay() {
   // Fetch statuses
   const { data: kurbanStatuses, isLoading: isLoadingStatuses } = useQuery<KurbanStatus[]>({
       queryKey: ['statuses'],
-      queryFn: statuses.getAll,
+      queryFn: status.getAll,
       // Stale time can be longer if statuses don't change often
       staleTime: 60 * 1000 * 5, // 5 minutes
   });

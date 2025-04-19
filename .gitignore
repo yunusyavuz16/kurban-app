@@ -1,66 +1,49 @@
 # Dependencies
 node_modules/
-/.pnp
-.pnp.js
-yarn.lock
 package-lock.json
+yarn.lock
 
 # Environment variables
 .env
 .env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.development
+.env.test
+.env.production
 .env*.local
 
-# Testing
-/coverage
-*.lcov
-.nyc_output
-
-# Production build
-/build
+# Build output
 /dist
-/out
-/.next
-*.tsbuildinfo
+/build
 
-# Development
-.DS_Store
+# Logs
+logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
 
-# IDE and editors
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output
+
+# IDEs and editors
 /.idea
 .project
 .classpath
+.c9/
 *.launch
 .settings/
 *.sublime-workspace
-*.sublime-project
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# Misc
-*.pem
-.cache
-.temp
-*.swp
-*.swo
-*~
-._*
-Thumbs.db
+# System Files
 .DS_Store
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+Thumbs.db
 
 # Debug
 debug.log
@@ -75,43 +58,7 @@ debug/
 # Optional eslint cache
 .eslintcache
 
-# Optional stylelint cache
-.stylelintcache
-
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
-
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Yarn Integrity file
-.yarn-integrity
-
-# Supabase
-.supabase/
-
-# Backend specific
-backend/node_modules/
-backend/.env
-backend/dist/
-backend/coverage/
-backend/logs/
-backend/*.log
-
-# Frontend specific
-frontend/node_modules/
-frontend/.env
-frontend/build/
-frontend/dist/
-frontend/coverage/
-frontend/.cache/
-frontend/*.log
-
-# Local Netlify folder
-.netlify
+# Temp files
+*.swp
+*.swo
+*~

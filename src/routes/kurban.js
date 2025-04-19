@@ -236,7 +236,7 @@ router.put("/:id", auth, authorize(["staff", "admin"]), async (req, res) => {
     // Güncelleme işlemini yap
     const { error: updateError } = await supabase
       .from("kurban")
-      .update({ status_id: updateData.status_id })
+      .update({ status_id: updateData.status_id, no: updateData.no, notes: updateData.notes })
       .eq("id", id);
 
     if (updateError) {

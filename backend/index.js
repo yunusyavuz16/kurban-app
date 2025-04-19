@@ -12,7 +12,7 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: 'https://your-frontend-domain.com', // Replace with your frontend URL
+  origin: 'https://kurban-app-m252.vercel.app', // Replace with your frontend URL
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allow necessary methods
   credentials: true // If you need to include credentials (like cookies)
 }));

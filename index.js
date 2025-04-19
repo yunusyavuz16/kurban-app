@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const { createClient } = require("@supabase/supabase-js");
-const serverless = require('serverless-http');
 
 const kurbanRoutes = require("./src/routes/kurban");
 const authRoutes = require("./src/routes/auth");
@@ -50,5 +49,3 @@ const PORT = process.env.PORT || 3001;
 app.get('/', (req, res) => {
   res.send('Hello from Express on Vercel');
 });
-
-module.exports.handler = serverless(app);

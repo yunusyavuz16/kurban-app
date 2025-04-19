@@ -1,21 +1,17 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const { createClient } = require('@supabase/supabase-js');
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const { createClient } = require("@supabase/supabase-js");
 
-const kurbanRoutes = require('./src/routes/kurban');
-const authRoutes = require('./src/routes/auth');
-const userRoutes = require('./src/routes/users');
-const statusRoutes = require('./src/routes/statuses');
+const kurbanRoutes = require("./src/routes/kurban");
+const authRoutes = require("./src/routes/auth");
+const userRoutes = require("./src/routes/users");
+const statusRoutes = require("./src/routes/statuses");
 
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: 'https://kurban-app-m252.vercel.app', // Replace with your frontend URL
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allow necessary methods
-  credentials: true // If you need to include credentials (like cookies)
-}));
+app.use(cors());
 app.use(express.json());
 
 // Supabase Client Initialization
@@ -24,7 +20,7 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
-  console.error('Missing required Supabase environment variables');
+  console.error("Missing required Supabase environment variables");
   process.exit(1);
 }
 
@@ -37,15 +33,15 @@ app.locals.supabase = supabase;
 app.locals.supabaseAdmin = supabaseAdmin;
 
 // Routes
-app.use('/api/kurban', kurbanRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/statuses', statusRoutes);
+app.use("/api/kurban", kurbanRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/statuses", statusRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Something broke!' });
+  res.status(500).json({ error: "Something broke!" });
 });
 
 const PORT = process.env.PORT || 3001;

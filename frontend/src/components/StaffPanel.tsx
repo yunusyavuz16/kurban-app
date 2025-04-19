@@ -48,6 +48,7 @@ export default function StaffPanel() {
   const [updatedAnimalData, setUpdatedAnimalData] = useState<
     Partial<KurbanUpdatePayload>
   >({});
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const queryClient = useQueryClient();
 
@@ -160,10 +161,18 @@ export default function StaffPanel() {
     }
   };
 
-  const filteredAnimals = animals?.filter(
-    (animal) =>
-      selectedStatusFilter === "all" ||
-      animal.status.id === selectedStatusFilter
+  const filteredAnimals = animals?.filter((animal) =>
+    (selectedStatusFilter === "all" ||
+      animal.status.id === selectedStatusFilter) &&
+    searchQuery
+      ? animal.no
+          .toLocaleLowerCase()
+          .includes(searchQuery.toLocaleLowerCase()) ||
+        animal.order_number
+          .toString()
+          .toLocaleLowerCase()
+          .includes(searchQuery.toLocaleLowerCase())
+      : true
   );
 
   const sortedStatuses = kurbanStatuses?.sort(
@@ -197,14 +206,14 @@ export default function StaffPanel() {
         </button>
       </div>
 
-      <div className="mb-6 sm:mb-8">
+      <div className="mb-3 sm:mb-8">
         <div className="flex flex-wrap gap-2 sm:gap-3">
           <button
             onClick={() => setSelectedStatusFilter("all")}
             className={`px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm font-medium rounded-lg border transition-colors duration-150 ${
               selectedStatusFilter === "all"
                 ? "!bg-blue-600 text-white border-blue-600"
-                : "!bg-white text-gray-700 border-gray-300 hover:!bg-gray-100"
+                : "!bg-white text-gray-700  hover:!bg-gray-100 !border-gray-300"
             }`}
           >
             Tümü
@@ -217,7 +226,7 @@ export default function StaffPanel() {
                 ${
                   selectedStatusFilter === status.id
                     ? "!bg-blue-600 !text-white ring-2 ring-offset-1 ring-black"
-                    : "!bg-white !text-black"
+                    : "!bg-white !text-black !border-gray-300 hover:!bg-gray-100"
                 }
  `}
             >
@@ -225,6 +234,15 @@ export default function StaffPanel() {
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="flex mb-3 ">
+        <input
+          type="text"
+          placeholder="Kurban ara..."
+          className="px-3 py-1.5 h-12 text-xs sm:px-4 sm:py-2 sm:text-sm font-medium rounded-lg border transition-colors duration-150 w-full"
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">

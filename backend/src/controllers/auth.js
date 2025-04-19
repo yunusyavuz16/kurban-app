@@ -81,7 +81,7 @@ exports.register = async (req, res) => {
         {
           id: user.id,
           email: user.email,
-          role: role || 'staff',
+          role: role || 'staff'
         }
       ])
       .select()

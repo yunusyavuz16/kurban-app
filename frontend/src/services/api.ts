@@ -168,9 +168,9 @@ export const user = {
     const response = await api.post('/auth/register', { email, password, role });
     return response.data;
   },
-  deleteUser: async (email: string) => {
-    console.warn('deleteUser by email is not directly supported by DELETE /users/:id. Implement DELETE /users/:email or use ID.');
-    return Promise.resolve({ message: 'Delete by email not implemented in this function. Use delete(id).' });
+  deleteUser: async (id: string) => {
+    const response = await api.delete(`/users/${id}`);
+    return response.data;
   },
   create: async (data: any) => {
     console.warn('user.create is likely deprecated. Use user.register instead.');

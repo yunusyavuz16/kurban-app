@@ -7,6 +7,7 @@ import AdminPanel from './components/AdminPanel';
 import StaffPanel from './components/StaffPanel';
 import TVDisplay from './components/TVDisplay';
 import Layout from './components/Layout';
+import UserInquiry from './components/UserInquiry';
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               {/* TV Rotası Public */}
               <Route path="/tv" element={<TVDisplay />} />
+              <Route path="/inquiry" element={<UserInquiry />} />
 
               {/* Staff Rotası */}
               <Route

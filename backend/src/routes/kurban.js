@@ -117,9 +117,9 @@ router.get("/subscribe", (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const { data, error } = await req.app.locals.supabase
-      .from("kurban")
+      .from("kurban_with_status")
       .select("*")
-      .eq("id", req.params.id)
+      .eq("no", req.params.id)
       .single();
 
     if (error) throw error;
@@ -127,9 +127,11 @@ router.get("/:id", async (req, res) => {
 
     res.json(data);
   } catch (error) {
+    console.error("Error fetching specific kurban:", error);
     res.status(500).json({ error: error.message });
   }
 });
+
 // Create new animal entry (Staff/Admin only)
 router.post("/", auth, authorize(["staff", "admin"]), async (req, res) => {
   try {

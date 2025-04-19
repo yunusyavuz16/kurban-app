@@ -24,7 +24,7 @@ interface StatusFormProps {
 }
 
 interface KurbanFormData {
-  no: number;
+  no: string;
   notes?: string;
 }
 
@@ -304,7 +304,6 @@ export default function StaffPanel() {
               Kurban Numarası
             </label>
             <input
-              type="number"
               {...register("no", {
                 required: "Kurban numarası zorunludur",
                 min: {
@@ -312,7 +311,7 @@ export default function StaffPanel() {
                   message: "Kurban numarası 1'den büyük olmalıdır",
                 },
               })}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="h-8 p-2 mt-1 block w-full rounded-md !border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
             {errors.no && (
               <p className="mt-1 text-sm text-red-600">{errors.no.message}</p>
@@ -325,7 +324,7 @@ export default function StaffPanel() {
             <textarea
               {...register("notes")}
               rows={3}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1  p-2 block w-full rounded-md !border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="İsteğe bağlı notlar..."
             />
           </div>

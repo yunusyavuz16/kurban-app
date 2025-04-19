@@ -24,7 +24,7 @@ interface StatusFormProps {
 }
 
 interface KurbanFormData {
-  order_number: number;
+  no: number;
   notes?: string;
 }
 
@@ -65,9 +65,9 @@ export default function StaffPanel() {
   });
 
   const createMutation = useMutation({
-    mutationFn: ({ order_number, notes }: KurbanFormData) =>
+    mutationFn: ({ no, notes }: KurbanFormData) =>
       kurban.create({
-        order_number,
+        no,
         notes,
       }),
     onSuccess: () => {
@@ -90,7 +90,7 @@ export default function StaffPanel() {
     }: {
       id: string;
       data: Partial<KurbanUpdatePayload>;
-    }) => kurban.update(id, data),
+    }) => kurban.update(id, { status_id: data.status_id }),
     onSuccess: (updatedAnimal) => {
       queryClient.invalidateQueries({ queryKey: ["animals"] });
       setIsDetailModalOpen(false);
@@ -110,8 +110,9 @@ export default function StaffPanel() {
 
   const onSubmit = async (data: KurbanFormData) => {
     try {
+      console.log("data", data);
       await createMutation.mutateAsync({
-        order_number: data.order_number,
+        no: data.no,
         notes: data.notes,
       });
       setIsAddModalOpen(false);
@@ -144,7 +145,7 @@ export default function StaffPanel() {
         notes,
         meat_pieces,
       };
-      console.log('updateData',updateData)
+      console.log("updateData", updateData);
       updateMutation.mutate({ id: animalId, data: updateData });
     }
   };
@@ -171,7 +172,7 @@ export default function StaffPanel() {
 
   const getStatusStyleString = (status?: KurbanStatus): string => {
     if (!status) return "!bg-gray-100 text-gray-800 border-gray-300";
-    return `${status.color_bg} ${status.color_text} ${status.color_border}`;
+    return `!${status.color_bg} !${status.color_border}`;
   };
 
   if (isLoadingAnimals || isLoadingStatuses) {
@@ -212,13 +213,13 @@ export default function StaffPanel() {
             <button
               key={status.id}
               onClick={() => setSelectedStatusFilter(status.id)}
-              className={`px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm font-medium rounded-lg border transition-colors duration-150 ${getStatusStyleString(
-                status
-              )} ${
-                selectedStatusFilter === status.id
-                  ? "!bg-blue-600 !text-white ring-2 ring-offset-1 ring-black"
-                  : "!bg-white !text-gray-700"
-              }`}
+              className={`px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm font-medium rounded-lg border transition-colors duration-150
+                ${
+                  selectedStatusFilter === status.id
+                    ? "!bg-blue-600 !text-white ring-2 ring-offset-1 ring-black"
+                    : "!bg-white !text-black"
+                }
+ `}
             >
               {status.label}
             </button>
@@ -237,7 +238,7 @@ export default function StaffPanel() {
                 Kurban #{animal.no}
               </h2>
               <h3 className="text-sm sm:text-xl font-bold text-gray-800 mb-2">
-                Kurban #{animal.order_number}
+                Sıra #{animal.order_number}
               </h3>
               <span
                 className={`inline-block px-3 py-1 mb-3 rounded-full text-xs sm:text-sm font-semibold ${getStatusStyleString(
@@ -259,7 +260,7 @@ export default function StaffPanel() {
                 onChange={(e) => handleStatusUpdate(animal.id, e.target.value)}
                 className={`w-full p-2 text-sm sm:text-base rounded-md border shadow-sm mb-3 ${getStatusStyleString(
                   animal.status
-                )} focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500`}
+                )} !text-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500`}
                 disabled={
                   updateMutation.isPending &&
                   updateMutation.variables?.id === animal.id &&
@@ -304,7 +305,7 @@ export default function StaffPanel() {
             </label>
             <input
               type="number"
-              {...register("order_number", {
+              {...register("no", {
                 required: "Kurban numarası zorunludur",
                 min: {
                   value: 1,
@@ -313,10 +314,8 @@ export default function StaffPanel() {
               })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
-            {errors.order_number && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.order_number.message}
-              </p>
+            {errors.no && (
+              <p className="mt-1 text-sm text-red-600">{errors.no.message}</p>
             )}
           </div>
           <div>

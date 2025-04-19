@@ -130,27 +130,14 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
 // Create new animal entry (Staff/Admin only)
 router.post("/", auth, authorize(["staff", "admin"]), async (req, res) => {
   try {
     const supabase = req.app.locals.supabase;
-    const { order_number, notes } = req.body;
+    const { notes, no } = req.body;
 
-    // Validate order_number
-    if (!order_number) {
-      return res.status(400).json({ error: "Kurban numarası zorunludur" });
-    }
-
-    // Convert order_number to number if it's a string
-    const orderNumber =
-      typeof order_number === "string" ? parseInt(order_number) : order_number;
-
-    if (isNaN(orderNumber) || orderNumber <= 0) {
-      return res
-        .status(400)
-        .json({ error: "Geçerli bir kurban numarası girmelisiniz" });
-    }
+    // Log the incoming request data
+    console.log("Incoming request data:", { notes });
 
     // 1. Find the default status ID ('waiting')
     const { data: defaultStatus, error: statusError } = await supabase
@@ -161,81 +148,64 @@ router.post("/", auth, authorize(["staff", "admin"]), async (req, res) => {
 
     if (statusError) {
       console.error("Error finding default status:", statusError);
-      return res
-        .status(500)
-        .json({
-          error: "Durum bilgisi alınamadı",
-          details: statusError.message,
-        });
-    }
-
-    if (!defaultStatus) {
-      return res.status(500).json({ error: "Varsayılan durum bulunamadı" });
-    }
-
-    // 2. Check if order_number already exists
-    const { data: existingKurban, error: checkError } = await supabase
-      .from("kurban")
-      .select("order_number")
-      .eq("order_number", orderNumber)
-      .single();
-
-    if (checkError && checkError.code !== "PGRST116") {
-      // PGRST116 = no rows found
-      console.error("Error checking order number:", checkError);
-      return res
-        .status(500)
-        .json({
-          error: "Kurban numarası kontrolü yapılamadı",
-          details: checkError.message,
-        });
-    }
-
-    if (existingKurban) {
-      return res
-        .status(409)
-        .json({ error: "Bu kurban numarası zaten kullanılıyor" });
-    }
-
-    // 3. Insert the new kurban with the provided order_number and default status_id
-    const { data, error } = await supabase
-      .from("kurban")
-      .insert([
-        {
-          order_number: orderNumber,
-          status_id: defaultStatus.id,
-          notes: notes || null,
-          meat_pieces: { leg: 0, arm: 0, chest: 0, back: 0, ground: 0 },
-        },
-      ])
-      .select(
-        `
-        id, order_number, created_at, updated_at, weight, notes, slaughter_time, butcher_name, package_count, meat_pieces,
-        status:kurban_statuses ( id, name, label, color_bg, color_text, color_border, display_order )
-      `
-      )
-      .single();
-
-    if (error) {
-      console.error("Supabase insert error:", error);
-      if (error.code === "23505") {
-        return res
-          .status(409)
-          .json({ error: "Bu kurban numarası zaten kullanılıyor" });
-      }
       return res.status(500).json({
-        error: "Kurban eklenirken bir hata oluştu",
-        details: error.message || "Bilinmeyen veritabanı hatası",
+        error: "Durum bilgisi alınamadı",
+        details: statusError.message,
       });
     }
 
-    res.status(201).json(data);
-  } catch (err) {
-    console.error("Server error:", err);
-    res.status(500).json({
-      error: "Sunucu hatası",
-      details: err.message || "Bilinmeyen hata",
+    // 2. Find the current max order_number
+    const { data: maxOrderData, error: maxOrderError } = await supabase
+      .from("kurban")
+      .select("order_number")
+      .order("order_number", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (maxOrderError && maxOrderError.code !== "PGRST116") {
+      // PGRST116: No rows found
+      console.error("Error fetching max order_number:", maxOrderError);
+      return res.status(500).json({
+        error: "Kurban numarası alınamadı",
+        details: maxOrderError.message,
+      });
+    }
+
+    const nextOrderNumber = maxOrderData?.order_number
+      ? maxOrderData.order_number + 1
+      : 1;
+    console.log("nextOrderNumber", nextOrderNumber);
+    console.log("dada", {
+      order_number: nextOrderNumber,
+      notes,
+      status_id: defaultStatus.id,
+      no,
     });
+    // 3. Insert the new kurban entry
+    const { data: newKurban, error: insertError } = await supabase
+      .from("kurban")
+      .insert([
+        {
+          order_number: nextOrderNumber,
+          notes,
+          status_id: defaultStatus.id,
+          no,
+        },
+      ])
+      .single();
+
+    if (insertError) {
+      console.error("Error inserting kurban:", insertError);
+      return res.status(500).json({
+        error: "Yeni kurban eklenemedi",
+        details: insertError.message,
+      });
+    }
+
+    return res.status(201).json(newKurban);
+  } catch (err) {
+    console.error("Unexpected error:", err);
+    return res.status(500).json({ error: "Sunucu hatası" });
   }
 });
 
@@ -264,7 +234,7 @@ router.put("/:id", auth, authorize(["staff", "admin"]), async (req, res) => {
     // Güncelleme işlemini yap
     const { error: updateError } = await supabase
       .from("kurban")
-      .update(updateData)
+      .update({ status_id: updateData.status_id })
       .eq("id", id);
 
     if (updateError) {
@@ -278,6 +248,8 @@ router.put("/:id", auth, authorize(["staff", "admin"]), async (req, res) => {
       .select("*")
       .eq("id", id)
       .single();
+
+    console.log("update,", updatedKurban);
 
     if (fetchError) {
       console.error("Error fetching updated kurban:", fetchError);

@@ -205,28 +205,28 @@ export default function AdminPanel() {
 
   return (
     <div className="min-h-screen !bg-gray-50 p-4 sm:p-8">
-      <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-800">Yönetici Paneli</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 !text-gray-800">Yönetici Paneli</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <div className="!bg-white p-4 sm:p-6 rounded-lg shadow-lg border border-gray-200">
-          <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-700">
+          <h3 className="text-lg sm:text-xl font-semibold mb-2 !text-gray-700">
             Toplam Kurban
           </h3>
-          <p className="text-3xl sm:text-4xl font-bold text-blue-600">{totalAnimals}</p>
+          <p className="text-3xl sm:text-4xl font-bold !text-blue-600">{totalAnimals}</p>
         </div>
         <div className="!bg-white p-4 sm:p-6 rounded-lg shadow-lg border border-gray-200">
           <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-700">
             Tamamlanan
           </h3>
-          <p className="text-3xl sm:text-4xl font-bold text-green-600">
+          <p className="text-3xl sm:text-4xl font-bold !text-green-600">
             {completedAnimals}
           </p>
         </div>
         <div className="!bg-white p-4 sm:p-6 rounded-lg shadow-lg border border-gray-200">
-          <h3 className="text-lg sm:text-xl font-semibold mb-2 text-gray-700">
+          <h3 className="text-lg sm:text-xl font-semibold mb-2 !text-gray-700">
             Devam Eden
           </h3>
-          <p className="text-3xl sm:text-4xl font-bold text-orange-600">
+          <p className="text-3xl sm:text-4xl font-bold !text-orange-600">
             {totalAnimals - completedAnimals}
           </p>
         </div>
@@ -237,7 +237,7 @@ export default function AdminPanel() {
       </div>
 
       <div className="!bg-white p-4 sm:p-6 rounded-lg shadow-lg border border-gray-200 mb-6 sm:mb-8">
-        <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-gray-800">
+        <h2 className="text-xl sm:text-2xl font-semibold mb-4 !text-gray-800">
           Kullanıcı Yönetimi
         </h2>
         <form onSubmit={handleCreateUser} className="space-y-4">
@@ -247,7 +247,7 @@ export default function AdminPanel() {
               value={newUserEmail}
               onChange={(e) => setNewUserEmail(e.target.value)}
               placeholder="Email"
-              className="p-2 sm:p-3 text-sm sm:text-base !bg-gray-50 border border-gray-300 rounded-lg text-gray-800 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+              className="p-2 sm:p-3 text-sm sm:text-base !bg-gray-50 border border-gray-300 rounded-lg !text-gray-800 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
               required
               disabled={createUserMutation.isPending}
             />
@@ -256,7 +256,7 @@ export default function AdminPanel() {
               value={newUserPassword}
               onChange={(e) => setNewUserPassword(e.target.value)}
               placeholder="Şifre"
-              className="p-2 sm:p-3 text-sm sm:text-base !bg-gray-50 border border-gray-300 rounded-lg text-gray-800 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+              className="p-2 sm:p-3 text-sm sm:text-base !bg-gray-50 border border-gray-300 rounded-lg !text-gray-800 placeholder-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
               required
               disabled={createUserMutation.isPending}
             />
@@ -265,7 +265,7 @@ export default function AdminPanel() {
               onChange={(e) =>
                 setNewUserRole(e.target.value as "admin" | "staff")
               }
-              className="p-2 sm:p-3 text-sm sm:text-base !bg-gray-50 border border-gray-300 rounded-lg text-gray-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+              className="p-2 sm:p-3 text-sm sm:text-base !bg-gray-50 border border-gray-300 rounded-lg !text-gray-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
               disabled={createUserMutation.isPending}
             >
               <option value="staff">Personel</option>
@@ -326,8 +326,8 @@ export default function AdminPanel() {
                     <span
                       className={`px-3 py-1 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold ${
                         user.role === "admin"
-                          ? "!bg-purple-100 text-purple-700 border border-purple-200"
-                          : "!bg-blue-100 text-blue-700 border border-blue-200"
+                          ? "!bg-purple-100 !text-purple-700 border border-purple-200"
+                          : "!bg-blue-100 !text-blue-700 border border-blue-200"
                       }`}
                     >
                       {user.role === "admin" ? "Yönetici" : "Personel"}
@@ -369,8 +369,8 @@ export default function AdminPanel() {
                 <span className={`px-3 py-1 rounded-lg text-xs sm:text-sm font-semibold border ${status.color_bg} ${status.color_text} ${status.color_border}`}>
                   {status.label}
                 </span>
-                <span className="text-gray-600 text-xs sm:text-sm">({status.name})</span>
-                <span className="text-gray-500 text-xs sm:text-sm">Sıra: {status.display_order}</span>
+                <span className="!text-gray-600 text-xs sm:text-sm">({status.name})</span>
+                <span className="!text-gray-500 text-xs sm:text-sm">Sıra: {status.display_order}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <button
@@ -390,7 +390,7 @@ export default function AdminPanel() {
             </div>
           ))}
           {(!kurbanStatuses || kurbanStatuses.length === 0) && (
-            <p className="text-center text-gray-500 py-4">Tanımlı durum bulunmamaktadır.</p>
+            <p className="text-center !text-gray-500 py-4">Tanımlı durum bulunmamaktadır.</p>
           )}
         </div>
       </div>
@@ -398,17 +398,17 @@ export default function AdminPanel() {
       {isStatusModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center p-4 z-50" style={{background: 'rgba(200,200,200,0.75)'}}>
           <div className="!bg-white rounded-2xl shadow-2xl p-6 w-full max-w-lg transform transition-all ">
-            <h3 className="text-lg sm:text-xl font-medium leading-6 text-gray-900 mb-4">
+            <h3 className="text-lg sm:text-xl font-medium leading-6 !text-gray-900 mb-4">
               {statusForm.id ? 'Durumu Düzenle' : 'Yeni Durum Ekle'}
             </h3>
             <form onSubmit={handleStatusSubmit} className="space-y-4">
               <div>
-                <label htmlFor="label" className="block text-sm font-medium text-gray-700">Etiket (Görünür Ad)</label>
+                <label htmlFor="label" className="block text-sm font-medium !text-gray-700">Etiket (Görünür Ad)</label>
                 <input type="text" name="label" id="label" value={statusForm.label} onChange={handleStatusFormChange} required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 text-black" />
               </div>
 
 
-              {statusError && <p className="text-red-600 text-sm">{statusError}</p>}
+              {statusError && <p className="!text-red-600 text-sm">{statusError}</p>}
 
               <div className="mt-6 flex flex-col sm:flex-row sm:justify-end sm:space-x-3 space-y-3 sm:space-y-0">
                 <button type="submit" disabled={statusMutation.isPending} className={`w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm ${statusMutation.isPending ? '!bg-blue-400' : '!bg-blue-600 hover:!bg-blue-700'}`}> {statusMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}</button>

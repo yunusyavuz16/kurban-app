@@ -75,21 +75,21 @@ export default function KurbanOrderManager() {
     );
   }
 
-  const waitingAnimals = animals
-    ?.filter((animal) => animal.status.name === "waiting")
-    .sort((a, b) => a.order_number - b.order_number);
+  const generalAnimals = animals?.sort(
+    (a, b) => a.order_number - b.order_number
+  );
 
   return (
     <div className="!bgwhite rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200">
-      <h2 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2 sm:mb-4">
-        Kurban Sıralaması (Beklemede)
+      <h2 className="text-lg sm:text-xl font-semibold !text-gray-800 mb-2 sm:mb-4">
+        Kurban Sıralaması
       </h2>
-      <p className="text-xs sm:text-sm text-gray-600 mb-4">
+      <p className="text-xs sm:text-sm !text-gray-600 mb-4">
         Sırayı değiştirmek için sürükleyip bırakın (Masaüstü).
       </p>
 
       <div className="space-y-2 sm:space-y-3">
-        {waitingAnimals?.map((animal) => (
+        {generalAnimals?.map((animal) => (
           <div
             key={animal.id}
             draggable
@@ -105,18 +105,18 @@ export default function KurbanOrderManager() {
           >
             <div className="flex items-center flex-row">
               <div>
-                <span className=" sm:text-lg font-semibold text-gray-900 w-12 ">
+                <span className=" sm:text-lg font-semibold !text-gray-900 w-12 ">
                   Sıra No: #{animal.order_number} - Kurban No : {animal.no}
                 </span>
               </div>
               <div>
-                <span className="text-xs sm:text-sm text-gray-500 ms-4">
+                <span className="text-xs sm:text-sm !text-gray-500 ms-4">
                   Oluşturulma:{" "}
                   {new Date(animal.created_at).toLocaleString("tr-TR")}
                 </span>
               </div>
             </div>
-            <div className="text-gray-400 hidden sm:block" aria-hidden="true">
+            <div className="!text-gray-400 hidden sm:block" aria-hidden="true">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5"
@@ -134,7 +134,7 @@ export default function KurbanOrderManager() {
             </div>
           </div>
         ))}
-        {(!waitingAnimals || waitingAnimals.length === 0) && (
+        {(!generalAnimals || generalAnimals.length === 0) && (
           <div className="text-center py-6 sm:py-8 text-gray-500 !bggray-50 rounded-lg text-sm sm:text-base">
             Bekleyen kurban bulunmamaktadır
           </div>

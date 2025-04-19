@@ -39,7 +39,11 @@ app.locals.supabase = supabasePublic;
 app.locals.supabaseAdmin = supabaseAdmin;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'https://your-frontend-domain.com', // Replace with your frontend URL
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Allow necessary methods
+  credentials: true // If you need to include credentials (like cookies)
+}));
 app.use(express.json());
 
 // Dev logging middleware

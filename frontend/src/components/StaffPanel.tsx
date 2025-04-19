@@ -161,19 +161,23 @@ export default function StaffPanel() {
     }
   };
 
-  const filteredAnimals = animals?.filter((animal) =>
-    (selectedStatusFilter === "all" ||
-      animal.status.id === selectedStatusFilter) &&
-    searchQuery
-      ? animal.no
-          .toLocaleLowerCase()
-          .includes(searchQuery.toLocaleLowerCase()) ||
-        animal.order_number
-          .toString()
-          .toLocaleLowerCase()
-          .includes(searchQuery.toLocaleLowerCase())
-      : true
-  );
+  const filteredAnimals = animals
+    ?.filter(
+      (animal) =>
+        selectedStatusFilter === "all" ||
+        animal.status.id === selectedStatusFilter
+    )
+    .filter((animal) =>
+      searchQuery
+        ? animal.no
+            .toLocaleLowerCase()
+            .includes(searchQuery.toLocaleLowerCase()) ||
+          animal.order_number
+            .toString()
+            .toLocaleLowerCase()
+            .includes(searchQuery.toLocaleLowerCase())
+        : true
+    );
 
   const sortedStatuses = kurbanStatuses?.sort(
     (a, b) => a.display_order - b.display_order

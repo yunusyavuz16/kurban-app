@@ -322,4 +322,42 @@ router.post("/reorder", auth, authorize(["admin"]), async (req, res) => {
   }
 });
 
+router.post(
+  "/reorder-by-target",
+  auth,
+  authorize(["admin"]),
+  async (req, res) => {
+    try {
+      const supabase = req.app.locals.supabase;
+      const { kurban_id, dragged_order, target_order } = req.body;
+
+      if (!dragged_order || !target_order) {
+        return res
+          .status(400)
+          .json({ error: "Missing required fields: draggedId and targetId" });
+      }
+
+      // Call the reorder_kurbans function
+      const { error } = await supabase.rpc(
+        "reorder_kurban_by_targer_order_number",
+        {
+          p_kurban_id: kurban_id,
+          p_dragged_order: dragged_order,
+          p_target_order: target_order,
+        }
+      );
+
+      if (error) {
+        console.error("Error reordering kurbans:", error);
+        return res.status(500).json({ error: "Failed to reorder kurbans" });
+      }
+
+      res.json({ message: "Kurbans reordered successfully" });
+    } catch (error) {
+      console.error("Server error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
 module.exports = router;

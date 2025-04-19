@@ -1,19 +1,28 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { kurban } from "../services/api";
-import type { Animal, KurbanReorderPayload } from "../services/api";
+import type {
+  Animal,
+  KurbanReorderPayload,
+  KurbanReorderPayloadByTarget,
+  KurbanUpdatePayload,
+} from "../services/api";
 import { useForm } from "react-hook-form";
 import { Modal } from "./Modal";
+
 interface KurbanFormData {
   no: string;
+  order_number: number; // Add order_number to the form data
   notes?: string;
 }
+
 export default function KurbanOrderManager() {
   const queryClient = useQueryClient();
   const [isDragging, setIsDragging] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
-
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false); // New state for edit modal
+  const [selectedAnimal, setSelectedAnimal] = useState<Animal | null>(null); // State to hold the selected animal for editing
 
   const { data: animals, isLoading } = useQuery<Animal[]>({
     queryKey: ["animals"],
@@ -42,22 +51,61 @@ export default function KurbanOrderManager() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async (data: KurbanUpdatePayload & { id: string }) => {
+      return await kurban.update(data.id, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["animals"] });
+      setIsEditModalOpen(false);
+      setSelectedAnimal(null);
+    },
+    onError: (error: any) => {
+      console.error("Update error:", error);
+      alert(
+        "Güncelleme sırasında hata oluştu: " +
+          (error?.response?.data?.error || error.message)
+      );
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await kurban.delete(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["animals"] });
+    },
+    onError: (error: any) => {
+      console.error("Delete error:", error);
+      alert(
+        "Silme sırasında hata oluştu: " +
+          (error?.response?.data?.error || error.message)
+      );
+    },
+  });
+
   const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
+    register: registerCreate,
+    handleSubmit: handleSubmitCreate,
+    formState: { errors: errorsCreate },
+    reset: resetCreate,
   } = useForm<KurbanFormData>();
+
+  const {
+    register: registerEdit,
+    handleSubmit: handleSubmitEdit,
+    formState: { errors: errorsEdit },
+    reset: resetEdit,
+  } = useForm<KurbanFormData>(); // New useForm instance for editing
 
   const onSubmit = async (data: KurbanFormData) => {
     try {
-      console.log("data", data);
       await createMutation.mutateAsync({
         no: data.no,
         notes: data.notes,
       });
-      setIsAddModalOpen(false);
-      reset();
+      resetCreate();
     } catch (error: any) {
       console.error("Error creating kurban:", error);
       setFormError(
@@ -66,21 +114,34 @@ export default function KurbanOrderManager() {
     }
   };
 
-  const reorderMutation = useMutation({
-    mutationFn: async (payload: KurbanReorderPayload) => {
-      return await kurban.reorder(payload);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["animals"] });
-    },
-    onError: (error: any) => {
-      console.error("Reorder failed:", error);
-      alert(
-        "Sıralama güncellenirken hata oluştu: " +
-          (error?.response?.data?.error || error.message)
-      );
-    },
-  });
+  const onEditSubmit = async (data: KurbanFormData) => {
+    if (selectedAnimal) {
+      try {
+        await reorderMutationByTarget.mutateAsync({
+          dragged_order: selectedAnimal.order_number,
+          target_order: Number(data.order_number),
+          kurban_id: selectedAnimal.id,
+        });
+        await updateMutation.mutateAsync({
+          id: selectedAnimal.id,
+          no: data.no,
+          notes: data.notes,
+        });
+        resetEdit(); // Reset the edit form after submission
+      } catch (error: any) {
+        console.error("Error updating kurban:", error);
+        setFormError(
+          error.response?.data?.error || "Kurban güncellenirken bir hata oluştu"
+        );
+      }
+    }
+  };
+
+  const handleDelete = (animalId: string) => {
+    if (window.confirm("Bu kurbanı silmek istediğinize emin misiniz?")) {
+      deleteMutation.mutate(animalId);
+    }
+  };
 
   const handleDragStart = (
     e: React.DragEvent<HTMLDivElement>,
@@ -114,9 +175,40 @@ export default function KurbanOrderManager() {
     }
 
     reorderMutation.mutate({ draggedId, targetId });
-
     setIsDragging(null);
   };
+
+  const reorderMutation = useMutation({
+    mutationFn: async (payload: KurbanReorderPayload) => {
+      return await kurban.reorder(payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["animals"] });
+    },
+    onError: (error: any) => {
+      console.error("Reorder failed:", error);
+      alert(
+        "Sıralama güncellenirken hata oluştu: " +
+          (error?.response?.data?.error || error.message)
+      );
+    },
+  });
+
+  const reorderMutationByTarget = useMutation({
+    mutationFn: async (payload: KurbanReorderPayloadByTarget) => {
+      return await kurban.reorderByTarget(payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["animals"] });
+    },
+    onError: (error: any) => {
+      console.error("Reorder failed:", error);
+      alert(
+        "Sıralama güncellenirken hata oluştu: " +
+          (error?.response?.data?.error || error.message)
+      );
+    },
+  });
 
   if (isLoading) {
     return (
@@ -167,7 +259,7 @@ export default function KurbanOrderManager() {
               <div className="flex items-center flex-row">
                 <div>
                   <span className=" sm:text-lg font-semibold !text-gray-900 w-12 ">
-                    Kurban No : {animal.no} - Sıra No: #{animal.order_number}
+                    Kurban No: {animal.no} - Sıra No: #{animal.order_number}
                   </span>
                 </div>
                 <div>
@@ -177,24 +269,29 @@ export default function KurbanOrderManager() {
                   </span>
                 </div>
               </div>
-              <div
-                className="!text-gray-400 hidden sm:block"
-                aria-hidden="true"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => {
+                    setSelectedAnimal(animal);
+                    resetEdit({
+                      no: animal.no,
+                      order_number: animal.order_number,
+                      notes: animal.notes ?? "",
+                    });
+                    resetCreate();
+
+                    setIsEditModalOpen(true);
+                  }}
+                  className="text-sm !bg-white !border-gray-300 !hover:bg-gray-200 !text-blue-600 hover:underline"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
+                  Güncelle
+                </button>
+                <button
+                  onClick={() => handleDelete(animal.id)}
+                  className="text-sm !bg-white !border-gray-300 !hover:bg-gray-200 !text-red-600 hover:underline"
+                >
+                  Sil
+                </button>
               </div>
             </div>
           ))}
@@ -211,11 +308,11 @@ export default function KurbanOrderManager() {
         onClose={() => {
           setIsAddModalOpen(false);
           setFormError(null);
-          reset();
+          resetCreate();
         }}
         title="Yeni Kurban Ekle"
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmitCreate(onSubmit)} className="space-y-4">
           {formError && (
             <div className="!bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
               <p className="text-sm">{formError}</p>
@@ -226,7 +323,7 @@ export default function KurbanOrderManager() {
               Kurban Numarası
             </label>
             <input
-              {...register("no", {
+              {...registerCreate("no", {
                 required: "Kurban numarası zorunludur",
                 min: {
                   value: 1,
@@ -235,8 +332,10 @@ export default function KurbanOrderManager() {
               })}
               className="h-8 p-2 mt-1 block w-full rounded-md !border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
-            {errors.no && (
-              <p className="mt-1 text-sm text-red-600">{errors.no.message}</p>
+            {errorsCreate.no && (
+              <p className="mt-1 text-sm text-red-600">
+                {errorsCreate.no.message}
+              </p>
             )}
           </div>
           <div>
@@ -244,7 +343,7 @@ export default function KurbanOrderManager() {
               Notlar
             </label>
             <textarea
-              {...register("notes")}
+              {...registerCreate("notes")}
               rows={3}
               className="mt-1  p-2 block w-full rounded-md !border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               placeholder="İsteğe bağlı notlar..."
@@ -256,7 +355,7 @@ export default function KurbanOrderManager() {
               onClick={() => {
                 setIsAddModalOpen(false);
                 setFormError(null);
-                reset();
+                resetCreate();
               }}
               className="px-4 py-2 text-sm font-medium text-gray-700 !bg-white border border-gray-300 rounded-md hover:!bg-gray-50"
             >
@@ -271,6 +370,97 @@ export default function KurbanOrderManager() {
             </button>
           </div>
         </form>
+      </Modal>
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedAnimal(null);
+          resetEdit();
+          resetCreate();
+        }}
+        title="Kurbanı Güncelle"
+      >
+        {selectedAnimal && (
+          <form onSubmit={handleSubmitEdit(onEditSubmit)} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Kurban Numarası
+              </label>
+              <input
+                {...registerEdit("no", {
+                  required: "Kurban numarası zorunludur",
+                  min: {
+                    value: 1,
+                    message: "Kurban numarası 1'den büyük olmalıdır",
+                  },
+                  value: selectedAnimal?.no, // Set initial value
+                })}
+                className="h-8 p-2 mt-1 block w-full rounded-md !border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+              {errorsEdit.no && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errorsEdit.no.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Sıra Numarası
+              </label>
+              <input
+                type="number"
+                {...registerEdit("order_number", {
+                  required: "Sıra numarası zorunludur",
+                  min: {
+                    value: 1,
+                    message: "Sıra numarası 1'den büyük olmalıdır",
+                  },
+                  value: selectedAnimal.order_number, // Set initial value
+                })}
+                className="h-8 p-2 mt-1 block w-full rounded-md !border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+              {errorsEdit.order_number && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errorsEdit.order_number.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Notlar
+              </label>
+              <textarea
+                {...registerEdit("notes")}
+                rows={3}
+                className="mt-1  p-2 block w-full rounded-md !border-gray-500 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                placeholder="İsteğe bağlı notlar..."
+                defaultValue={selectedAnimal.notes} // Set initial value
+              />
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setSelectedAnimal(null);
+                  resetEdit();
+                  resetCreate();
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 !bg-white border border-gray-300 rounded-md hover:!bg-gray-50"
+              >
+                İptal
+              </button>
+              <button
+                type="submit"
+                disabled={updateMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-white !bg-blue-600 border border-transparent rounded-md hover:!bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {updateMutation.isPending ? "Güncelleniyor..." : "Güncelle"}
+              </button>
+            </div>
+          </form>
+        )}
       </Modal>
     </>
   );

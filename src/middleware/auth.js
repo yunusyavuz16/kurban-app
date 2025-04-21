@@ -27,7 +27,7 @@ exports.auth = asyncHandler(async (req, res, next) => {
     // Get user role from database
     const { data: userData, error: userError } = await req.app.locals.supabase
       .from("users")
-      .select("role")
+      .select("*")
       .eq("id", user.id)
       .single();
 
@@ -40,6 +40,7 @@ exports.auth = asyncHandler(async (req, res, next) => {
       id: user.id,
       email: user.email,
       role: userData.role,
+      organization_id: userData.organization_id,
     };
 
     next();

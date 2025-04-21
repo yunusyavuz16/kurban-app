@@ -16,6 +16,7 @@ router.get('/users', auth, adminOnly, async (req, res) => {
     const { data: users, error } = await req.app.locals.supabase
       .from('users')
       .select('id, email, role')
+      .eq('organization_id', req.user.organization_id)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
@@ -35,9 +36,14 @@ router.delete('/users/:email', async (req, res) => {
     // Get user ID from email
     const { data: user, error: fetchError } = await req.app.locals.supabaseAdmin
       .from('users')
-      .select('id')
+      .select('id,organization_id')
       .eq('email', email)
       .single();
+
+      // Check if user same organization
+    if (user && user.organization_id !== req.user.organization_id) {
+      return res.status(403).json({ success: false, error: 'Forbidden' });
+    }
 
     if (fetchError || !user) {
       return res.status(404).json({ success: false, error: 'User not found' });

@@ -14,6 +14,35 @@ exports.register = async (req, res) => {
       });
     }
 
+    // check if email is valid
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid email format',
+      });
+    }
+
+    // check if the user already exists
+    const { data: existingUser, error: existingUserError } = await req.app.locals.supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+    if (existingUserError && existingUserError.code !== 'PGRST116') {
+      console.error('Error checking existing user:', existingUserError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to check existing user',
+      });
+    }
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: 'User already exists',
+      });
+    }
+
     // First, check if user exists in auth.users
     const { data: authUser, error: authError } = await req.app.locals.supabaseAdmin.auth.admin
       .listUsers();
@@ -32,6 +61,7 @@ exports.register = async (req, res) => {
             id: existingAuthUser.id,
             email: existingAuthUser.email,
             role: role || 'staff',
+            organization_id: req.user.organization_id,
           }
         ])
         .select()
@@ -81,7 +111,8 @@ exports.register = async (req, res) => {
         {
           id: user.id,
           email: user.email,
-          role: role || 'staff'
+          role: role || 'staff',
+          organization_id: req.user.organization_id,
         }
       ])
       .select()
@@ -189,7 +220,8 @@ exports.login = async (req, res) => {
           {
             id: authData.user.id,
             email: authData.user.email,
-            role: 'staff'
+            role: 'staff',
+            organization_id: req.user.organization_id
           }
         ])
         .select()
@@ -211,7 +243,8 @@ exports.login = async (req, res) => {
         user: {
           id: authData.user.id,
           email: authData.user.email,
-          role: 'staff'
+          role: 'staff',
+          organization_id: req.user.organization_id
         }
       });
     }
@@ -232,7 +265,8 @@ exports.login = async (req, res) => {
       user: {
         id: authData.user.id,
         email: authData.user.email,
-        role: userData.role
+        role: userData.role,
+        organization_id: req.user.organization_id
       }
     });
   } catch (err) {
@@ -251,7 +285,7 @@ exports.getMe = async (req, res) => {
   try {
     const { data: userData, error } = await req.app.locals.supabase
       .from('users')
-      .select('id, email, role')
+      .select('id, email, role, organization_id')
       .eq('id', req.user.id)
       .single();
 

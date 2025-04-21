@@ -75,11 +75,12 @@ router.get("/subscribe", (req, res) => {
               .from("kurban")
               .select(
                 `
-                        id, order_number, created_at, updated_at, weight, notes, slaughter_time, butcher_name, package_count, meat_pieces,
+                        id, order_number, created_at, updated_at, weight, notes, slaughter_time, butcher_name, package_count, meat_pieces, organization_id,
                         status:kurban_statuses ( id, name, label, color_bg, color_text, color_border, display_order )
                     `
               )
               .eq("id", payload.new.id)
+              .eq("organization_id", req.user.organization_id) // Ensure the kurban belongs to the user's organization
               .single();
 
             if (kurbanError) {
@@ -137,6 +138,8 @@ router.post("/", auth, authorize(["staff", "admin"]), async (req, res) => {
   try {
     const supabase = req.app.locals.supabase;
     const { notes, no } = req.body;
+    const { user } = req;
+    console.log("user", user);
 
     // Log the incoming request data
     console.log("Incoming request data:", { notes });
@@ -176,13 +179,7 @@ router.post("/", auth, authorize(["staff", "admin"]), async (req, res) => {
     const nextOrderNumber = maxOrderData?.order_number
       ? maxOrderData.order_number + 1
       : 1;
-    console.log("nextOrderNumber", nextOrderNumber);
-    console.log("dada", {
-      order_number: nextOrderNumber,
-      notes,
-      status_id: defaultStatus.id,
-      no,
-    });
+
     // 3. Insert the new kurban entry
     const { data: newKurban, error: insertError } = await supabase
       .from("kurban")
@@ -192,6 +189,7 @@ router.post("/", auth, authorize(["staff", "admin"]), async (req, res) => {
           notes,
           status_id: defaultStatus.id,
           no,
+          organization_id: user.organization_id,
         },
       ])
       .single();
@@ -218,8 +216,20 @@ router.put("/:id", auth, authorize(["staff", "admin"]), async (req, res) => {
     const supabase = req.app.locals.supabase;
     const updateData = req.body;
 
-    // Debug için log
-    console.log("Updating kurban:", { id, updateData });
+    // first control if kurban is in you organization, check the kurban organization_id is equal to auth user organization_id
+    const { data: kurbanData, error: kurbanError } = await supabase
+      .from("kurban")
+      .select("organization_id")
+      .eq("id", id)
+      .single();
+
+    if (kurbanError) {
+      console.error("Error fetching kurban organization_id:", kurbanError);
+      return res.status(500).json({ error: "Failed to fetch kurban" });
+    }
+    if (kurbanData.organization_id !== req.user.organization_id) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
     // İlk olarak kurbanın var olup olmadığını kontrol et
     const { data: existingKurban, error: checkError } = await supabase
@@ -236,7 +246,11 @@ router.put("/:id", auth, authorize(["staff", "admin"]), async (req, res) => {
     // Güncelleme işlemini yap
     const { error: updateError } = await supabase
       .from("kurban")
-      .update({ status_id: updateData.status_id, no: updateData.no, notes: updateData.notes })
+      .update({
+        status_id: updateData.status_id,
+        no: updateData.no,
+        notes: updateData.notes,
+      })
       .eq("id", id);
 
     if (updateError) {
@@ -250,8 +264,6 @@ router.put("/:id", auth, authorize(["staff", "admin"]), async (req, res) => {
       .select("*")
       .eq("id", id)
       .single();
-
-    console.log("update,", updatedKurban);
 
     if (fetchError) {
       console.error("Error fetching updated kurban:", fetchError);
@@ -278,6 +290,21 @@ router.delete("/:id", auth, authorize(["admin"]), async (req, res) => {
     const supabase = req.app.locals.supabase;
     const kurbanId = req.params.id;
 
+    // first control if kurban is in you organization, check the kurban organization_id is equal to auth user organization_id
+    const { data: kurbanData, error: kurbanError } = await supabase
+      .from("kurban")
+      .select("organization_id")
+      .eq("id", kurbanId)
+      .single();
+
+    if (kurbanError) {
+      console.error("Error fetching kurban organization_id:", kurbanError);
+      return res.status(500).json({ error: "Failed to fetch kurban" });
+    }
+    if (kurbanData.organization_id !== req.user.organization_id) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+    // Check if kurban exists
     const { error } = await supabase.from("kurban").delete().eq("id", kurbanId);
 
     if (error) {
@@ -297,6 +324,20 @@ router.post("/reorder", auth, authorize(["admin"]), async (req, res) => {
   try {
     const supabase = req.app.locals.supabase;
     const { draggedId, targetId } = req.body;
+
+    const { data: kurbanData, error: kurbanError } = await supabase
+      .from("kurban")
+      .select("organization_id")
+      .eq("id", draggedId)
+      .single();
+
+    if (kurbanError) {
+      console.error("Error fetching kurban organization_id:", kurbanError);
+      return res.status(500).json({ error: "Failed to fetch kurban" });
+    }
+    if (kurbanData.organization_id !== req.user.organization_id) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
 
     if (!draggedId || !targetId) {
       return res
@@ -330,6 +371,20 @@ router.post(
     try {
       const supabase = req.app.locals.supabase;
       const { kurban_id, dragged_order, target_order } = req.body;
+
+      const { data: kurbanData, error: kurbanError } = await supabase
+        .from("kurban")
+        .select("organization_id")
+        .eq("id", kurban_id)
+        .single();
+
+      if (kurbanError) {
+        console.error("Error fetching kurban organization_id:", kurbanError);
+        return res.status(500).json({ error: "Failed to fetch kurban" });
+      }
+      if (kurbanData.organization_id !== req.user.organization_id) {
+        return res.status(403).json({ error: "Forbidden" });
+      }
 
       if (!dragged_order || !target_order) {
         return res

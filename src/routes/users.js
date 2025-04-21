@@ -67,7 +67,13 @@ router.get("/organization-code", auth, async (req, res) => {
       .select("code")
       .eq("id", req.user.organization_id)
       .single();
-    if (error) throw error;
+    if (error) {
+      console.error("Error fetching organization code:", error);
+      return res.status(500).json({
+        error: "Kurum kodu alınırken bir hata oluştu",
+        message: error.message,
+      });
+    }
 
     res.json({ code: data.code });
   } catch (error) {

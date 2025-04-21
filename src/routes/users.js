@@ -58,4 +58,24 @@ router.delete("/:id", auth, authorize(["admin"]), async (req, res) => {
   }
 });
 
+
+// Get organization code by auth user
+router.get("/organization-code", auth, async (req, res) => {
+  try {
+    const { data, error } = await req.app.locals.supabase
+      .from("organization")
+      .select("code")
+      .eq("id", req.user.organization_id)
+      .single();
+    if (error) throw error;
+
+    res.json({ code: data.code });
+  } catch (error) {
+    console.error("Error fetching organization code:", error);
+    res.status(500).json({
+      error: "Kurum kodu alınırken bir hata oluştu",
+    });
+  }
+});
+
 module.exports = router;

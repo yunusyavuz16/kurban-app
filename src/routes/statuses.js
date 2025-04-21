@@ -24,6 +24,31 @@ router.get("/", async (req, res) => {
   }
 });
 
+// GET all statuses (public)
+router.get("/getByOrganizationAll", auth, async (req, res) => {
+  try {
+    const supabase = req.app.locals.supabase;
+    const { organization_id } = req.user; // Kullanıcının organization_id'sini al
+
+    const { data, error } = await supabase
+      .from("kurban_statuses")
+      .select(
+        "id, name, label, color_bg, color_text, color_border, display_order"
+      )
+      .eq("organization_id", organization_id) // Kullanıcının organization_id'sine göre filtrele
+      .order("display_order", { ascending: true });
+
+    if (error) {
+      console.error("Error fetching statuses:", error);
+      return res.status(500).json({ error: "Failed to fetch statuses" });
+    }
+    res.json(data);
+  } catch (err) {
+    console.error("Server error fetching statuses:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 // POST create new status (admin only)
 router.post("/", auth, authorize(["admin"]), async (req, res) => {
   try {

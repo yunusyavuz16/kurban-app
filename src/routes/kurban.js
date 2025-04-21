@@ -29,6 +29,35 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/getByOrganizationAll", auth, async (req, res) => {
+  try {
+    const supabase = req.app.locals.supabase;
+    const { organization_id } = req.user; // Kullanıcının organization_id'sini al
+
+    // Join with kurban_statuses to get status details
+    const { data, error } = await supabase
+      .from("kurban")
+      .select(
+        `
+        id, no, order_number, created_at, updated_at, weight, notes, slaughter_time, butcher_name, package_count, meat_pieces,
+        status:kurban_statuses ( id, name, label, color_bg, color_text, color_border, display_order )
+      `
+      )
+      .eq("organization_id", organization_id) // Kullanıcının organization_id'sine göre filtrele
+      .order("order_number", { ascending: true }); // Order by kurban order_number
+
+    if (error) {
+      console.error("Error fetching kurbans with statuses:", error);
+      return res.status(500).json({ error: "Failed to fetch kurbans" });
+    }
+    res.json(data);
+  } catch (error) {
+    console.error("Server error fetching kurbans:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
 // Search animal by order number (public)
 router.get("/search/order/:orderNumber", async (req, res) => {
   try {
@@ -149,6 +178,7 @@ router.post("/", auth, authorize(["staff", "admin"]), async (req, res) => {
       .from("kurban_statuses")
       .select("id")
       .eq("name", "waiting")
+      .eq("organization_id", user.organization_id) // Ensure the status belongs to the user's organization
       .single();
 
     if (statusError) {

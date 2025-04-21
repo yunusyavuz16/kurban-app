@@ -265,8 +265,7 @@ exports.login = async (req, res) => {
       user: {
         id: authData.user.id,
         email: authData.user.email,
-        role: userData.role,
-        organization_id: req.user.organization_id
+        role: userData.role
       }
     });
   } catch (err) {

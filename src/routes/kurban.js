@@ -2,29 +2,51 @@ const express = require("express");
 const router = express.Router();
 const { auth, adminOnly, staffOnly, authorize } = require("../middleware/auth");
 
-// Get all animals (public)
-router.get("/", async (req, res) => {
+router.get("/getByOrganization/:organizationCode", auth, async (req, res) => {
   try {
     const supabase = req.app.locals.supabase;
-    // Join with kurban_statuses to get status details
-    const { data, error } = await supabase
+    const { organizationCode } = req.params; // URL'den organizationCode parametresini al
+    if(!organizationCode) {
+      return res.status(400).json({ error: "Organization code is required" });
+    }
+
+    // Organization tablosundan organizationCode'a göre organizasyonu bul
+    const { data: organization, error: orgError } = await supabase
+      .from("organization")
+      .select("id")
+      .eq("code", organizationCode)
+      .single();
+
+    if (orgError) {
+      console.error("Error fetching organization:", orgError);
+      return res.status(500).json({ error: "Failed to fetch organization" });
+    }
+
+    if (!organization) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
+    const organizationId = organization.id;
+    // Kurban tablosundan ilgili organizasyonun kurbanlarını al
+    const { data: kurbans, error: kurbanError } = await supabase
       .from("kurban")
-      // Select needed fields from kurban and all fields (*) or specific fields from status
       .select(
         `
         id, no, order_number, created_at, updated_at, weight, notes, slaughter_time, butcher_name, package_count, meat_pieces,
         status:kurban_statuses ( id, name, label, color_bg, color_text, color_border, display_order )
       `
       )
+      .eq("organization_id", organizationId) // Organizasyon ID'sine göre filtrele
       .order("order_number", { ascending: true }); // Order by kurban order_number
 
-    if (error) {
-      console.error("Error fetching kurbans with statuses:", error);
+    if (kurbanError) {
+      console.error("Error fetching kurbans:", kurbanError);
       return res.status(500).json({ error: "Failed to fetch kurbans" });
     }
-    res.json(data);
+
+    res.json(kurbans);
   } catch (error) {
-    console.error("Server error fetching kurbans:", error);
+    console.error("Server error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

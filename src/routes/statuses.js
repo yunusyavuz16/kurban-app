@@ -3,14 +3,36 @@ const router = express.Router();
 const { auth, authorize } = require("../middleware/auth");
 
 // GET all statuses (public)
-router.get("/", async (req, res) => {
+router.get("/getByOrganization/:organizationCode", auth, async (req, res) => {
   try {
     const supabase = req.app.locals.supabase;
+    const { organizationCode } = req.params; // URL'den organizationCode parametresini al
+    if (!organizationCode) {
+      return res.status(400).json({ error: "Organization code is required" });
+    }
+
+    // Organization tablosundan organizationCode'a göre organizasyonu bul
+    const { data: organization, error: orgError } = await supabase
+      .from("organization")
+      .select("id")
+      .eq("code", organizationCode)
+      .single();
+
+    if (orgError) {
+      console.error("Error fetching organization:", orgError);
+      return res.status(500).json({ error: "Failed to fetch organization" });
+    }
+
+    if (!organization) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
     const { data, error } = await supabase
       .from("kurban_statuses")
       .select(
         "id, name, label, color_bg, color_text, color_border, display_order"
       )
+      .eq("organization_id", organization.id) // Organization ID'sine göre filtrele
       .order("display_order", { ascending: true });
 
     if (error) {

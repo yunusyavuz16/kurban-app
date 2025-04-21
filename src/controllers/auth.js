@@ -244,7 +244,6 @@ exports.login = async (req, res) => {
           id: authData.user.id,
           email: authData.user.email,
           role: 'staff',
-          organization_id: req.user.organization_id
         }
       });
     }

@@ -7,8 +7,10 @@ router.get("/getByOrganization/:organizationCode", auth, async (req, res) => {
     const supabase = req.app.locals.supabase;
     const { organizationCode } = req.params; // URL'den organizationCode parametresini al
     if(!organizationCode) {
+      console.log("organizationCode", organizationCode);
       return res.status(400).json({ error: "Organization code is required" });
     }
+    console.log("organizationCode", organizationCode);
 
     // Organization tablosundan organizationCode'a göre organizasyonu bul
     const { data: organization, error: orgError } = await supabase
@@ -80,13 +82,36 @@ router.get("/getByOrganizationAll", auth, async (req, res) => {
 });
 
 
-// Search animal by order number (public)
-router.get("/search/order/:orderNumber", async (req, res) => {
+// Search animal by kurban no (public)
+router.get("/search/no/:organizationCode/:kurbanNo", async (req, res) => {
   try {
+    const { organizationCode, kurbanNo } = req.params;
+
+    // First get the organization ID from the code
+    const { data: organization, error: orgError } = await req.app.locals.supabase
+      .from("organization")
+      .select("id")
+      .eq("code", organizationCode)
+      .single();
+
+    if (orgError) {
+      console.error("Error fetching organization:", orgError);
+      return res.status(500).json({ error: "Failed to fetch organization" });
+    }
+
+    if (!organization) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
+    // Then search for the animal within that organization by kurban no
     const { data, error } = await req.app.locals.supabase
       .from("kurban")
-      .select("*")
-      .eq("order_number", parseInt(req.params.orderNumber))
+      .select(`
+        id, no, order_number, created_at, updated_at, weight, notes, slaughter_time, butcher_name, package_count, meat_pieces,
+        status:kurban_statuses ( id, name, label, color_bg, color_text, color_border, display_order )
+      `)
+      .eq("no", kurbanNo)
+      .eq("organization_id", organization.id)
       .single();
 
     if (error) {

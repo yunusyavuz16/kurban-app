@@ -492,4 +492,23 @@ router.post(
   }
 );
 
+// Get organization details by code (public)
+router.get("/organization/:code", async (req, res) => {
+  try {
+    const { data, error } = await req.app.locals.supabase
+      .from("organization")
+      .select("id, name, code")
+      .eq("code", req.params.code)
+      .single();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: "Organization not found" });
+
+    res.json(data);
+  } catch (error) {
+    console.error("Error fetching organization:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

@@ -46,8 +46,14 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3001;
 
-app.get('/', (req, res) => {
-  res.send('Hello from Express on Vercel');
+// listenin on 3001
+
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
+app.get("/", (req, res) => {
+  res.send("Hello from Express on Vercel");
 });
 
 module.exports = app;

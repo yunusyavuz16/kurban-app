@@ -511,4 +511,83 @@ router.get("/organization/:code", async (req, res) => {
   }
 });
 
+// Get status history for a kurban (public)
+router.get("/status-history/:organizationCode/:kurbanNo", async (req, res) => {
+  try {
+    const { organizationCode, kurbanNo } = req.params;
+
+    // First get the organization ID from the code
+    const { data: organization, error: orgError } = await req.app.locals.supabase
+      .from("organization")
+      .select("id")
+      .eq("code", organizationCode)
+      .single();
+
+    if (orgError) {
+      console.error("Error fetching organization:", orgError);
+      return res.status(500).json({ error: "Failed to fetch organization" });
+    }
+
+    if (!organization) {
+      return res.status(404).json({ error: "Organization not found" });
+    }
+
+    // Get all statuses for the organization
+    const { data: allStatuses, error: statusError } = await req.app.locals.supabase
+      .from("kurban_statuses")
+      .select("*")
+      .eq("organization_id", organization.id)
+      .order("display_order", { ascending: true });
+
+    if (statusError) {
+      console.error("Error fetching statuses:", statusError);
+      return res.status(500).json({ error: "Failed to fetch statuses" });
+    }
+
+    // Get the current kurban status
+    const { data: kurbanData, error: kurbanError } = await req.app.locals.supabase
+      .from("kurban")
+      .select(`
+        id, no, order_number, created_at, updated_at, weight, notes, slaughter_time, butcher_name, package_count, meat_pieces,
+        status:kurban_statuses ( id, name, label, color_bg, color_text, color_border, display_order )
+      `)
+      .eq("no", kurbanNo)
+      .eq("organization_id", organization.id)
+      .single();
+
+    if (kurbanError) {
+      if (kurbanError.code === "PGRST116") {
+        return res.status(404).json({ error: "Animal not found" });
+      }
+      throw kurbanError;
+    }
+
+    // Get all statuses with display_order less than or equal to current status
+    const currentStatusOrder = kurbanData.status.display_order;
+    const completedStatuses = allStatuses.filter(
+      status => status.display_order <= currentStatusOrder
+    );
+
+    // Format the response
+    const statusHistory = completedStatuses.map(status => ({
+      id: status.id,
+      name: status.name,
+      label: status.label,
+      color_bg: status.color_bg,
+      color_text: status.color_text,
+      color_border: status.color_border,
+      display_order: status.display_order,
+      is_current: status.id === kurbanData.status.id
+    }));
+
+    res.json({
+      current_status: kurbanData.status,
+      history: statusHistory
+    });
+  } catch (error) {
+    console.error("Error fetching status history:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

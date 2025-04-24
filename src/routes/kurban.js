@@ -580,6 +580,11 @@ router.get("/status-history/:organizationCode/:kurbanNo", async (req, res) => {
       is_current: status.id === kurbanData.status.id
     }));
 
+    // If the first status is cancelled and there are multiple statuses, remove it from the list
+    if (statusHistory.length > 1 && statusHistory[0].name === 'cancelled') {
+      statusHistory.shift();
+    }
+
     res.json({
       current_status: kurbanData.status,
       history: statusHistory

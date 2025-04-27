@@ -286,6 +286,105 @@ router.post("/", auth, authorize(["staff", "admin"]), async (req, res) => {
   }
 });
 
+// Bulk upload Kurbans (Admin only)
+router.post("/bulk", auth, authorize(["admin"]), async (req, res) => {
+  try {
+    const supabase = req.app.locals.supabase;
+    const kurbans = req.body;
+    const { user } = req;
+
+    if (!Array.isArray(kurbans) || kurbans.length === 0) {
+      return res.status(400).json({ error: "Geçerli kurban verisi bulunamadı" });
+    }
+
+    console.log(`Bulk uploading ${kurbans.length} kurbans`);
+
+    // 1. Find the default status ID ('waiting')
+    const { data: defaultStatus, error: statusError } = await supabase
+      .from("kurban_statuses")
+      .select("id")
+      .eq("name", "waiting")
+      .eq("organization_id", user.organization_id)
+      .single();
+
+    if (statusError) {
+      console.error("Error finding default status:", statusError);
+      return res.status(500).json({
+        error: "Durum bilgisi alınamadı",
+        details: statusError.message,
+      });
+    }
+
+    // 2. Check for duplicate kurban no or order_number in the request
+    const kurbanNos = kurbans.map(k => k.no);
+    const kurbanOrderNumbers = kurbans.map(k => k.order_number);
+
+    const hasDuplicateNos = new Set(kurbanNos).size !== kurbanNos.length;
+    const hasDuplicateOrderNumbers = new Set(kurbanOrderNumbers).size !== kurbanOrderNumbers.length;
+
+    if (hasDuplicateNos || hasDuplicateOrderNumbers) {
+      return res.status(400).json({
+        error: hasDuplicateNos
+          ? "Yüklenen dosyada aynı kurban kodu (no) birden fazla kez kullanılmış"
+          : "Yüklenen dosyada aynı kurban sırası (order_number) birden fazla kez kullanılmış"
+      });
+    }
+
+    // 3. Check if any kurban no already exists in the database
+    const { data: existingKurbans, error: existingKurbansError } = await supabase
+      .from("kurban")
+      .select("no")
+      .in("no", kurbanNos)
+      .eq("organization_id", user.organization_id);
+
+    if (existingKurbansError) {
+      console.error("Error checking existing kurbans:", existingKurbansError);
+      return res.status(500).json({
+        error: "Mevcut kurbanlar kontrol edilirken bir hata oluştu",
+        details: existingKurbansError.message,
+      });
+    }
+
+    if (existingKurbans.length > 0) {
+      const duplicates = existingKurbans.map(k => k.no).join(", ");
+      return res.status(400).json({
+        error: `Aşağıdaki kurban kodları zaten sistemde mevcut: ${duplicates}`
+      });
+    }
+
+    // 4. Map the data to the correct format for insertion
+    const kurbansToInsert = kurbans.map(kurban => ({
+      order_number: kurban.order_number,
+      notes: kurban.notes || "",
+      status_id: defaultStatus.id,
+      no: kurban.no,
+      organization_id: user.organization_id,
+    }));
+
+    // 5. Insert all kurbans
+    const { data: newKurbans, error: insertError } = await supabase
+      .from("kurban")
+      .insert(kurbansToInsert)
+      .select();
+
+    if (insertError) {
+      console.error("Error inserting kurbans:", insertError);
+      return res.status(500).json({
+        error: "Kurbanlar eklenirken bir hata oluştu",
+        details: insertError.message,
+      });
+    }
+
+    return res.status(201).json({
+      message: `${newKurbans.length} kurban başarıyla eklendi`,
+      kurbans: newKurbans
+    });
+  } catch (err) {
+    console.error("Unexpected error during bulk upload:", err);
+    return res.status(500).json({ error: "Sunucu hatası" });
+  }
+});
+
 // Update animal (staff only)
 router.put("/:id", auth, authorize(["staff", "admin"]), async (req, res) => {
   const { id } = req.params;

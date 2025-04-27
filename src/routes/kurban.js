@@ -213,12 +213,12 @@ router.get("/:id", async (req, res) => {
 router.post("/", auth, authorize(["staff", "admin"]), async (req, res) => {
   try {
     const supabase = req.app.locals.supabase;
-    const { notes, no } = req.body;
+    const { notes, no, order_number } = req.body;
     const { user } = req;
     console.log("user", user);
 
     // Log the incoming request data
-    console.log("Incoming request data:", { notes });
+    console.log("Incoming request data:", { notes, no, order_number });
 
     // 1. Find the default status ID ('waiting')
     const { data: defaultStatus, error: statusError } = await supabase
@@ -236,26 +236,31 @@ router.post("/", auth, authorize(["staff", "admin"]), async (req, res) => {
       });
     }
 
-    // 2. Find the current max order_number
-    const { data: maxOrderData, error: maxOrderError } = await supabase
-      .from("kurban")
-      .select("order_number")
-      .order("order_number", { ascending: false })
-      .limit(1)
-      .single();
+    // 2. Use provided order_number or find the next one
+    let nextOrderNumber = order_number;
 
-    if (maxOrderError && maxOrderError.code !== "PGRST116") {
-      // PGRST116: No rows found
-      console.error("Error fetching max order_number:", maxOrderError);
-      return res.status(500).json({
-        error: "Kurban numarası alınamadı",
-        details: maxOrderError.message,
-      });
+    if (!nextOrderNumber) {
+      // Find the current max order_number only if not provided in the request
+      const { data: maxOrderData, error: maxOrderError } = await supabase
+        .from("kurban")
+        .select("order_number")
+        .order("order_number", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (maxOrderError && maxOrderError.code !== "PGRST116") {
+        // PGRST116: No rows found
+        console.error("Error fetching max order_number:", maxOrderError);
+        return res.status(500).json({
+          error: "Kurban numarası alınamadı",
+          details: maxOrderError.message,
+        });
+      }
+
+      nextOrderNumber = maxOrderData?.order_number
+        ? maxOrderData.order_number + 1
+        : 1;
     }
-
-    const nextOrderNumber = maxOrderData?.order_number
-      ? maxOrderData.order_number + 1
-      : 1;
 
     // 3. Insert the new kurban entry
     const { data: newKurban, error: insertError } = await supabase

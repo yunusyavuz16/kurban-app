@@ -1,6 +1,54 @@
-# Kurban Management System - Backend
+# Kurban Management System - Backend API
 
-A comprehensive backend system for managing Kurban (sacrifice animal) processing with real-time tracking, status management, and organization support.
+This is the backend API for the Kurban Management System, built with Node.js, Express, and Supabase.
+
+## 🚀 Deployment on Vercel
+
+### Environment Variables Required
+
+Make sure to set these environment variables in your Vercel dashboard:
+
+```bash
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+NODE_ENV=production
+```
+
+### Deployment Steps
+
+1. Connect your repository to Vercel
+2. Set the environment variables in Vercel dashboard
+3. Deploy the project
+
+The API will be available at: `https://your-deployment.vercel.app`
+
+### API Endpoints
+
+- `GET /` - API information
+- `GET /health` - Health check
+- `GET /api/statuses/getByOrganization/:organizationCode` - Get organization statuses
+- `GET /api/kurban/search/no/:organizationCode/:kurbanNo` - Search kurban by number
+- `GET /api/kurban/status-history/:organizationCode/:kurbanNo` - Get status history
+
+## 🔧 Development
+
+### Local Setup
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Create `.env` file with required environment variables
+4. Start development server: `npm run dev`
+
+### Database Setup
+
+The application uses Supabase as the primary database. In development, it can optionally use direct PostgreSQL connections, but in production it uses Supabase API exclusively.
+
+## 📝 Notes
+
+- The application is optimized for Vercel's serverless environment
+- Uses Supabase API for all database operations in production
+- Includes fallback mechanisms for development environments
 
 ## 🚀 Features
 

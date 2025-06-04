@@ -1,17 +1,21 @@
 {
-  "name": "backend",
+  "name": "kurban-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Kurban Management System Backend API",
   "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "build": "echo 'No build step needed'",
     "setup": "node setup-database.js",
     "db:migrate": "sequelize-cli db:migrate",
     "db:seed": "sequelize-cli db:seed:all",
     "db:reset": "sequelize-cli db:migrate:undo:all && sequelize-cli db:migrate && sequelize-cli db:seed:all"
   },
-  "keywords": [],
+  "keywords": ["kurban", "management", "api", "nodejs", "express", "supabase"],
   "author": "",
   "license": "ISC",
   "dependencies": {

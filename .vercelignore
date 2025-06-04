@@ -1,0 +1,13 @@
+node_modules
+.env.local
+.env.development
+.env.test
+.git
+.gitignore
+README.md
+setup-database.js
+setup-supabase-tables.js
+create-tables.sql
+src/migrations
+src/seeders
+.sequelizerc

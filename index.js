@@ -3,9 +3,6 @@ const express = require("express");
 const cors = require("cors");
 const { createClient } = require("@supabase/supabase-js");
 
-// Import Sequelize models
-const db = require("./src/models");
-
 const kurbanRoutes = require("./src/routes/kurban");
 const authRoutes = require("./src/routes/auth");
 const userRoutes = require("./src/routes/users");
@@ -35,93 +32,19 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 app.locals.supabase = supabase;
 app.locals.supabaseAdmin = supabaseAdmin;
 
-// Make Sequelize models available to routes
-app.locals.db = db;
-
 // Routes
 app.use("/api/kurban", kurbanRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/statuses", statusRoutes);
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: "Something broke!" });
-});
-
-const PORT = process.env.PORT || 3001;
-
-// Database connection and server startup
-async function startServer() {
-  console.log('🚀 Starting Kurban Management System...');
-  console.log('==========================================\n');
-
-  let databaseConnected = false;
-
-  try {
-    // Attempt direct database connection with timeout
-    console.log('🔄 Attempting direct database connection...');
-
-    // Set a timeout for the connection attempt
-    const connectionPromise = db.sequelize.authenticate();
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Connection timeout')), 5000)
-    );
-
-    await Promise.race([connectionPromise, timeoutPromise]);
-
-    console.log('✅ Direct database connection established');
-    databaseConnected = true;
-
-    // Sync database in development mode
-    if (process.env.NODE_ENV !== 'production') {
-      await db.sequelize.sync({ alter: true });
-      console.log('✅ Database schema synchronized');
-    }
-
-  } catch (error) {
-    console.log('⚠️  Direct database connection not available');
-    console.log('🔄 Switching to Supabase API mode...');
-
-    // Test Supabase connection
-    try {
-      const { data, error } = await supabase.from('organization').select('count').limit(1);
-      if (!error) {
-        console.log('✅ Supabase API connection verified');
-      } else {
-        console.log('⚠️  Supabase API connection issue:', error.message);
-      }
-    } catch (supabaseError) {
-      console.log('⚠️  Supabase API test failed:', supabaseError.message);
-    }
-  }
-
-  // Start server
-  app.listen(PORT, () => {
-    console.log('\n🎉 Server started successfully!');
-    console.log('==================================');
-    console.log(`📡 Server URL: http://localhost:${PORT}`);
-    console.log(`🗄️  Database Mode: ${databaseConnected ? 'Direct Connection' : 'Supabase API'}`);
-    console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
-
-    if (!databaseConnected) {
-      console.log('\n💡 Note: Using Supabase API for data operations');
-      console.log('   This is normal and fully functional!');
-    }
-
-    console.log('\n🧪 Test endpoints:');
-    console.log(`   curl "http://localhost:${PORT}"`);
-    console.log(`   curl "http://localhost:${PORT}/api/statuses/getByOrganization/DEMO001"`);
-    console.log('==================================\n');
-  });
-}
-
+// Root endpoint
 app.get("/", (req, res) => {
   res.json({
     message: "Kurban Management System API",
     status: "running",
     version: "1.0.0",
+    mode: "Supabase API",
     endpoints: {
       kurban: "/api/kurban/*",
       auth: "/api/auth/*",
@@ -136,11 +59,119 @@ app.get("/health", (req, res) => {
   res.json({
     status: "healthy",
     timestamp: new Date().toISOString(),
-    database: app.locals.db ? "connected" : "api-mode"
+    database: "supabase-api",
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
-// Start the server
-startServer();
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error("Error:", err.message);
+  res.status(500).json({
+    error: "Internal server error",
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
+
+// Database connection and server startup
+async function startServer() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isVercel = process.env.VERCEL === '1';
+
+  console.log('🚀 Starting Kurban Management System...');
+  console.log('==========================================\n');
+
+  if (isProduction || isVercel) {
+    // In production/Vercel, skip Sequelize and use only Supabase API
+    console.log('🔧 Production mode: Using Supabase API only');
+
+    try {
+      // Test Supabase connection
+      const { data, error } = await supabase.from('organization').select('count').limit(1);
+      if (!error) {
+        console.log('✅ Supabase API connection verified');
+      } else {
+        console.log('⚠️  Supabase API connection issue:', error.message);
+      }
+    } catch (supabaseError) {
+      console.log('⚠️  Supabase API test failed:', supabaseError.message);
+    }
+  } else {
+    // In development, try to use Sequelize but fall back to Supabase API
+    try {
+      // Only import Sequelize models in development
+      const db = require("./src/models");
+
+      console.log('🔄 Attempting direct database connection...');
+
+      const connectionPromise = db.sequelize.authenticate();
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Connection timeout')), 5000)
+      );
+
+      await Promise.race([connectionPromise, timeoutPromise]);
+
+      console.log('✅ Direct database connection established');
+      app.locals.db = db;
+
+      // Sync database in development mode
+      await db.sequelize.sync({ alter: true });
+      console.log('✅ Database schema synchronized');
+
+    } catch (error) {
+      console.log('⚠️  Direct database connection not available');
+      console.log('🔄 Switching to Supabase API mode...');
+
+      // Test Supabase connection
+      try {
+        const { data, error } = await supabase.from('organization').select('count').limit(1);
+        if (!error) {
+          console.log('✅ Supabase API connection verified');
+        } else {
+          console.log('⚠️  Supabase API connection issue:', error.message);
+        }
+      } catch (supabaseError) {
+        console.log('⚠️  Supabase API test failed:', supabaseError.message);
+      }
+    }
+  }
+
+  const PORT = process.env.PORT || 3001;
+
+  // Only start server if not in Vercel (Vercel handles this automatically)
+  if (!isVercel) {
+    app.listen(PORT, () => {
+      console.log('\n🎉 Server started successfully!');
+      console.log('==================================');
+      console.log(`📡 Server URL: http://localhost:${PORT}`);
+      console.log(`🗄️  Database Mode: ${app.locals.db ? 'Direct Connection' : 'Supabase API'}`);
+      console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+
+      console.log('\n🧪 Test endpoints:');
+      console.log(`   curl "http://localhost:${PORT}"`);
+      console.log(`   curl "http://localhost:${PORT}/api/statuses/getByOrganization/MALT"`);
+      console.log('==================================\n');
+    });
+  }
+}
+
+// Initialize the app
+if (process.env.VERCEL === '1') {
+  // In Vercel, just initialize Supabase connection
+  console.log('🚀 Vercel deployment detected - Supabase API mode');
+  (async () => {
+    try {
+      const { data, error } = await supabase.from('organization').select('count').limit(1);
+      if (!error) {
+        console.log('✅ Supabase API ready');
+      }
+    } catch (err) {
+      console.log('⚠️  Supabase API initialization:', err.message);
+    }
+  })();
+} else {
+  // Start server normally in development
+  startServer();
+}
 
 module.exports = app;

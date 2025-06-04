@@ -691,7 +691,16 @@ router.get("/status-history/:organizationCode/:kurbanNo", async (req, res) => {
 
     res.json({
       current_status: kurbanData.status,
-      history: statusHistory
+      history: statusHistory,
+      kurban: {
+        id: kurbanData.id,
+        no: kurbanData.no,
+        order_number: kurbanData.order_number,
+        weight: kurbanData.weight,
+        notes: kurbanData.notes,
+        created_at: kurbanData.created_at,
+        updated_at: kurbanData.updated_at
+      }
     });
   } catch (error) {
     console.error("Error fetching status history:", error);

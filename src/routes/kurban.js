@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { auth, adminOnly, staffOnly, authorize } = require("../middleware/auth");
 
-router.get("/getByOrganization/:organizationCode", auth, async (req, res) => {
+router.get("/getByOrganization/:organizationCode", async (req, res) => {
   try {
     const supabase = req.app.locals.supabase;
     const { organizationCode } = req.params; // URL'den organizationCode parametresini al

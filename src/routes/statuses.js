@@ -3,7 +3,7 @@ const router = express.Router();
 const { auth, authorize } = require("../middleware/auth");
 
 // GET all statuses (public)
-router.get("/getByOrganization/:organizationCode", auth, async (req, res) => {
+router.get("/getByOrganization/:organizationCode", async (req, res) => {
   try {
     const supabase = req.app.locals.supabase;
     const { organizationCode } = req.params; // URL'den organizationCode parametresini al
